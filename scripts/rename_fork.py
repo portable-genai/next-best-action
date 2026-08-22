@@ -87,12 +87,18 @@ def _iter_files(include_docs: bool):
 
 def _replacements(args: argparse.Namespace) -> list[tuple[str, str]]:
     env_prefix = args.env_prefix.rstrip("_").upper() + "_"
-    # Order matters: replace the longer, more specific strings first. The dist and the
-    # resource share one string here, so the pairs are de-duplicated (first wins) to keep
-    # the plan sensible and the count honest.
+    # Order matters: replace the longer, more specific strings first. The pairs are also
+    # de-duplicated (first wins) to keep the plan sensible and the count honest. The
+    # anchored distribution has to run before the bare resource entry: the other way
+    # round, the resource pass rewrites the stem inside the pyproject declaration and
+    # the anchor never matches.
+    # The distribution name is the same token as the resource name, so replacing it bare
+    # consumes every occurrence and leaves the entry below doing nothing: a --dist that
+    # differs from --resource would silently rewrite the resource name too. Anchoring the
+    # distribution on its pyproject declaration keeps the two independently meaningful.
     raw = [
+        (f'name = "{_OLD_DIST}"', f'name = "{args.dist or args.resource}"'),
         (_OLD_RESOURCE, args.resource),
-        (_OLD_DIST, args.dist or args.resource),
         (_OLD_PACKAGE, args.package),
         (_OLD_CLI, args.cli),
         (_OLD_ENV_PREFIX, env_prefix),
