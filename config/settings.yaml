@@ -1,0 +1,181 @@
+# Next-Best-Action: Recommendations and Cross-Sell (D5) — runtime configuration.
+#
+# Switch the entire managed stack to on-prem by setting MKT_NBA_PROFILE=onprem
+# (or profile: onprem below). Nothing in src/next_best_action/domain changes.
+# MKT_NBA_PROFILE=local runs the whole pipeline offline (deterministic recommendation /
+# propensity store + SQLite FTS5 corpus + deterministic LLM), with NO Google Cloud SDK.
+#
+# D5 is generic and APAC: the active vertical (banking | online_retail) and market
+# (JP | AU | SG) are settings, and each market's residency region / locales come from the
+# per-market profiles below (config + seed), never a hard-coded branch.
+
+project_id: ${GOOGLE_CLOUD_PROJECT:-your-gcp-project}
+region: asia-southeast1                 # default residency region; per-market overrides apply
+profile: ${MKT_NBA_PROFILE:-}           # local | gcp | platform | onprem. NO fallback on purpose: an unset MKT_NBA_PROFILE is "no choice", which binds the SDK-free adapters but grants none of the local relaxations (no CORS dev origins, no dev-persona identity). Name the profile deliberately: MKT_NBA_PROFILE=local for a dev or demo run, =gcp for a real deployment.
+vertical: ${MKT_VERTICAL:-banking}      # banking | online_retail
+market: ${MKT_MARKET:-SG}               # JP | AU | SG
+
+models:
+  reasoning: gemini-3.5-flash           # GA — explanation narration (thinking=high)
+  triage: gemini-3.1-flash-lite         # GA — routing / triage / guardrail pre-checks
+  hard_reasoning: gemini-3.1-pro        # Preview — OFF unless use_hard_reasoning=true
+  use_hard_reasoning: false
+
+recommendation:
+  recommender_id: mkt-nba-recommender   # Vertex AI recommendations model id
+  propensity_endpoint: ${MKT_NBA_PROPENSITY:-}   # Vertex endpoint resource id, set after deploy
+  bigquery_dataset: mkt_nba             # BigQuery feature dataset
+  customers_table: customers
+  offers_table: offers
+  eligibility_rules_table: eligibility_rules
+  propensity_table: propensity_signals
+  max_candidates: 50
+
+knowledge_base:
+  base_url_env: HRZ_KB_URL              # A2 Enterprise KB (D5's offer / policy store)
+  data_store_id: mkt-nba-corpus         # only used by the standalone GCP File Search adapter
+  location: asia-southeast1
+  top_k: 10
+
+model_armor:
+  template_id: mkt-nba-guardrail
+  host: modelarmor.asia-southeast1.rep.googleapis.com
+
+logging:
+  log_name: next-best-action-audit
+  bucket: next-best-action-worm
+  retention_days: 2557                  # ~7 years; bucket is locked (irreversible) in prod
+
+agent_engine:
+  resource_name: ${MKT_AGENT_ENGINE:-}
+  display_name: next-best-action
+
+# The one catalog consent and preference store (Mkt6). The managed adapter refuses when this
+# is absent; local binds a synthetic, deterministic stand-in using the same versioned wire types.
+# Managed profiles mint a Google ID token for the reviewed custom audience through Workload
+# Identity. The kit's CONSENT_S2S_* env credentials remain only for non-GCP/local consumers.
+consent_url: ${MKT_CONSENT_STORE_URL:-}
+consent_audience: ${MKT_CONSENT_STORE_AUDIENCE:-}
+
+# Deterministic ranking tunables (config, not magic numbers in code).
+ranking:
+  propensity_weight: 0.6
+  value_weight: 0.4
+  min_score: 0.0
+
+# Local profile stores (SDK-free). Empty paths default under ~/.next_best_action/;
+# tests use ":memory:" for ephemeral, deterministic SQLite. No Google Cloud here.
+local:
+  db_path: ${MKT_LOCAL_DB:-}            # SQLite FTS5 offer/policy corpus index
+  audit_path: ${MKT_LOCAL_AUDIT:-}      # append-only local audit (WORM stand-in)
+  seed_path: ${MKT_LOCAL_SEED:-}        # catalog/customer seed JSON ("" => bundled fictional)
+
+# Jurisdiction-driven PII redaction (compliance packs). The local regex redactor, the GCP
+# DLP adapter and the eval gate detect the national identifiers for these jurisdictions
+# (plus universal email/phone), so a fork changes this list, NOT code, and its pii_safety
+# gate exercises its own identifiers. D5's home markets are JP/AU/SG; override with the env
+# MKT_NBA_PII_JURISDICTIONS (comma-separated ISO-3166 codes). Supported packs: SG, JP, AU,
+# IN, GB, HK (src/next_best_action/domain/pii_patterns.py).
+pii:
+  jurisdictions: [SG, JP, AU]
+
+# Per-market residency regions and locales (config + seed, NEVER hard-coded in a branch).
+# JP -> Tokyo, AU -> Sydney, SG -> Singapore; the region is selectable at deploy and
+# validated by config.market_profile().
+markets:
+  JP:
+    region: asia-northeast1
+    locales: [ja, en]
+    currency: JPY
+  AU:
+    region: australia-southeast1
+    locales: [en]
+    currency: AUD
+  SG:
+    region: asia-southeast1
+    locales: [en]
+    currency: SGD
+
+# ----------------------------------------------------------------------------- #
+# Port -> adapter bindings. The container picks the entry for the active profile,
+# with an exact profile match. These dotted paths are the build contract:
+# each adapter class takes a single Settings argument.
+# ----------------------------------------------------------------------------- #
+adapters:
+  # Consent is a separate port because Mkt6 is the single system of record. The recommendation
+  # adapters no longer own or decide consent. Local is a faithful synthetic stand-in; onprem
+  # refuses until the client preference centre is bound.
+  consent:
+    gcp: next_best_action.adapters.gcp.consent:RemoteConsentAdapter
+    platform: next_best_action.adapters.gcp.consent:RemoteConsentAdapter
+    local: next_best_action.adapters.local.consent:LocalConsentAdapter
+    onprem: next_best_action.adapters.onprem.consent:OnPremConsentAdapter
+  recommendation:
+    gcp: next_best_action.adapters.gcp.recommendation:VertexRecommendationAdapter
+    platform: next_best_action.adapters.gcp.recommendation:VertexRecommendationAdapter
+    local: next_best_action.adapters.local.recommendation:LocalRecommendationAdapter
+    onprem: next_best_action.adapters.onprem.recommendation:OnPremRecommendationAdapter
+  knowledge_base:
+    gcp: next_best_action.adapters.gcp.file_search_kb:FileSearchKnowledgeBaseAdapter
+    platform: next_best_action.adapters.platform.remote_knowledge_base:RemoteKnowledgeBaseAdapter
+    local: next_best_action.adapters.local.knowledge_base:LocalKnowledgeBaseAdapter
+    onprem: next_best_action.adapters.onprem.knowledge_base:OnPremKnowledgeBaseAdapter
+  llm:
+    gcp: next_best_action.adapters.gcp.gemini_llm:GeminiLLMAdapter
+    platform: next_best_action.adapters.gcp.gemini_llm:GeminiLLMAdapter
+    local: next_best_action.adapters.local.llm:LocalDeterministicLLMAdapter
+    onprem: next_best_action.adapters.onprem.llm:OnPremLLMAdapter
+  guardrail:
+    gcp: next_best_action.adapters.gcp.model_armor_guardrail:ModelArmorGuardrailAdapter
+    platform: next_best_action.adapters.platform.remote_guardrail:RemoteGuardrailAdapter
+    local: next_best_action.adapters.local.guardrail:LocalHeuristicGuardrailAdapter
+    onprem: next_best_action.adapters.onprem.guardrail:OnPremGuardrailAdapter
+  # PII de-identification at the boundary (R1, P-04): redact before the model and before
+  # any audit write. onprem fails closed (raises) rather than passing PII through.
+  redaction:
+    gcp: next_best_action.adapters.gcp.dlp_redaction:DlpRedactionAdapter
+    platform: next_best_action.adapters.platform.remote_redaction:RemoteRedactionAdapter
+    local: next_best_action.adapters.local.redaction:LocalRegexRedactionAdapter
+    onprem: next_best_action.adapters.onprem.redaction:OnPremRedactionAdapter
+  audit:
+    gcp: next_best_action.adapters.gcp.cloud_logging_audit:CloudLoggingAuditAdapter
+    platform: next_best_action.adapters.platform.remote_audit:RemoteAuditAdapter
+    local: next_best_action.adapters.local.audit:LocalAppendOnlyAuditAdapter
+    onprem: next_best_action.adapters.onprem.audit:OnPremAuditAdapter
+  tracer:
+    gcp: next_best_action.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
+    platform: next_best_action.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
+    local: next_best_action.adapters.local.tracer:LocalNoopTracerAdapter
+    onprem: next_best_action.adapters.onprem.tracer:OnPremTracerAdapter
+  evaluation:
+    gcp: next_best_action.adapters.gcp.genai_eval:GenAiEvalAdapter
+    platform: next_best_action.adapters.platform.remote_evaluation:RemoteEvaluationAdapter
+    local: next_best_action.adapters.local.evaluation:LocalOfflineEvalAdapter
+    onprem: next_best_action.adapters.onprem.evaluation:OnPremEvalAdapter
+  agent_registry:
+    gcp: next_best_action.adapters.gcp.a2a_registry:A2ARegistryAdapter
+    platform: next_best_action.adapters.platform.remote_registry:RemoteRegistryAdapter
+    local: next_best_action.adapters.local.registry_agent:LocalAgentRegistryAdapter
+    onprem: next_best_action.adapters.onprem.registry_agent:OnPremAgentRegistryAdapter
+  tool_catalog:
+    gcp: next_best_action.adapters.gcp.mcp_tool_catalog:McpToolCatalogAdapter
+    platform: next_best_action.adapters.gcp.mcp_tool_catalog:McpToolCatalogAdapter
+    local: next_best_action.adapters.local.tool_catalog:LocalToolCatalogAdapter
+    onprem: next_best_action.adapters.onprem.tool_catalog:OnPremToolCatalogAdapter
+  # Server-side, verified end-user identity (the client-asserted actor/ACL is never trusted):
+  # local = seeded dev personas (no IdP, offline demo/test), gcp + platform = verify the
+  # Cloud IAP-injected signed assertion, onprem = the client's own IdP placeholder (fail-fast).
+  identity:
+    gcp: next_best_action.adapters.gcp.iap_identity:IapIdentityAdapter
+    platform: next_best_action.adapters.gcp.iap_identity:IapIdentityAdapter
+    local: next_best_action.adapters.local.identity:LocalPersonaIdentityAdapter
+    onprem: next_best_action.adapters.onprem.identity:OnPremIdentityAdapter
+  # Rule R8: a RecommendationSet that requires_human_review is ROUTED to the Hrz7 Human-Review &
+  # Maker-Checker Console via the shared review-kit, not left as a per-repo boolean. local
+  # enqueues to an in-memory outbox (offline demo/test); gcp + platform submit over S2S to Hrz7's
+  # service intake; onprem is a fail-fast sovereign-target placeholder.
+  review_router:
+    gcp: next_best_action.adapters.platform.review_router:PlatformReviewRouter
+    platform: next_best_action.adapters.platform.review_router:PlatformReviewRouter
+    local: next_best_action.adapters.local.review_router:LocalReviewRouter
+    onprem: next_best_action.adapters.onprem.review_router:OnPremReviewRouter

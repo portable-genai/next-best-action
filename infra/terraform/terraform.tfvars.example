@@ -1,0 +1,49 @@
+# terraform.tfvars.example : concrete sample values for a Singapore-resident deploy.
+#
+# Copy to terraform.tfvars and fill in your own ids. Do NOT commit terraform.tfvars.
+# Region/zone default to Singapore. All values here are fictional.
+
+project_id = "acme-nba-sg-prod"
+
+# Residency. `region` is chosen at deploy time and must be a member of `allowed_regions`;
+# both default to Singapore, so these lines just restate the secure default. To deploy
+# elsewhere, set BOTH: extending `allowed_regions` is the deliberate residency review point
+# and belongs only after confirming the managed stack and your obligations in that region.
+allowed_regions = ["asia-southeast1"]
+region          = "asia-southeast1"
+zone            = "asia-southeast1-a"
+
+# ~7-year WORM retention for the audit log. Bucket lock is irreversible.
+retention_days = 2557
+
+# Org / Access Context Manager. access_policy_id is the numeric policy id.
+org_id           = "123456789012"
+billing_account  = "01ABCD-2345EF-67890A"
+access_policy_id = "987654321098"
+
+# One regular sovereignty perimeter contains the Shared VPC host and BOTH service projects.
+# Mkt6 owns that perimeter in its Terraform state; Mkt5 declares the same contract but must
+# not try to create a second regular perimeter. Project NUMBERS are not project ids.
+enable_vpc_sc                    = true
+manage_shared_vpc_sc_perimeter  = false
+shared_vpc_sc_perimeter_name    = "mkt_marketing_sg"
+shared_vpc_host_project_number  = "333333333333"
+mkt5_project_number             = "111111111111"
+mkt6_project_number             = "222222222222"
+vpc_sc_dry_run                  = true
+
+# Existing Shared VPC owned by the network platform. Both service projects must already be
+# associated with this host. The subnet must be /26 or larger and enable Private Google Access.
+shared_vpc_network    = "projects/acme-network-sg-prod/global/networks/mkt-prod"
+shared_vpc_subnetwork = "projects/acme-network-sg-prod/regions/asia-southeast1/subnetworks/cloud-run-mkt"
+
+# API image (Artifact Registry, asia-southeast1). Build + push the repo Dockerfile here.
+container_image = "asia-southeast1-docker.pkg.dev/acme-nba-sg-prod/mkt/next-best-action:0.1.0"
+
+# Mkt6 is the sole consent authority. The URL is its reviewed network endpoint; the custom
+# audience is configured on both Cloud Run services and carries no secret material.
+consent_store_url      = "https://marketing-compliance-gate-abc123-as.a.run.app"
+consent_store_audience = "https://mkt6-consent.internal.example"
+
+# Wire a real channel id in prod so posture alerts page someone.
+alert_notification_channels = []

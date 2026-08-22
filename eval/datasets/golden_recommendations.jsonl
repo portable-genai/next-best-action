@@ -1,0 +1,11 @@
+# Golden next-best-action set for the D5 offline eval gate. OBVIOUSLY-FICTIONAL synthetic
+# cases. Each line: a (customer_id, market, vertical) request plus the expected top offer id
+# (the eligible, consented, highest-scoring offer from the seeded data in
+# adapters/local/_seed.py) and a minimum recommendation count. Covers BOTH verticals
+# (banking AND online retail) across ALL THREE markets (JP, AU, SG).
+{"id": "sg-banking", "customer_id": "cust-sg-bank-1", "market": "SG", "vertical": "banking", "expected_top_offer": "sg-bank-credit-card", "min_recommendations": 1}
+{"id": "jp-banking", "customer_id": "cust-jp-bank-1", "market": "JP", "vertical": "banking", "expected_top_offer": "jp-bank-fx-wallet", "min_recommendations": 1}
+{"id": "au-banking", "customer_id": "cust-au-bank-1", "market": "AU", "vertical": "banking", "expected_top_offer": "au-bank-offset", "min_recommendations": 1}
+{"id": "sg-retail", "customer_id": "cust-sg-retail-1", "market": "SG", "vertical": "online_retail", "expected_top_offer": "sg-retail-prime-delivery", "min_recommendations": 1}
+{"id": "jp-retail", "customer_id": "cust-jp-retail-1", "market": "JP", "vertical": "online_retail", "expected_top_offer": "jp-retail-loyalty-gold", "min_recommendations": 1}
+{"id": "au-retail", "customer_id": "cust-au-retail-1", "market": "AU", "vertical": "online_retail", "expected_top_offer": "au-retail-outdoor-kit", "min_recommendations": 1}

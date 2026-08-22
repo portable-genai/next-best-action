@@ -1,0 +1,17 @@
+# Eligibility / consent accuracy rubric for D5.
+#
+# The deterministic eligibility and consent engines must be consistent: no recommendation
+# may be ineligible or consent-suppressed, and the recommended top offer must match the
+# expected eligible, consented, highest-scoring offer for the golden case. The result must
+# always carry the human-review flag (nothing consequential auto-executes).
+metric: eligibility_accuracy
+threshold: 0.90
+description: >-
+  Fraction of golden cases where the deterministic eligibility + consent gate held (no
+  ineligible / consent-suppressed recommendation) and the top recommendation matched the
+  expected offer.
+companion_metrics:
+  review_safety:
+    threshold: 0.99
+    description: >-
+      Fraction of results that correctly set requires_human_review=True (maker-checker).

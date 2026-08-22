@@ -1,0 +1,24 @@
+# Groundedness rubric for the D5 next-best-action result.
+#
+# Every recommendation must be backed by at least one Citation (the offer catalog entry,
+# the propensity signal, and the consent record). The offline gate (eval/run_eval.py)
+# enforces the threshold below; the production Gen AI evaluation service uses the same
+# metric name pre-promotion.
+metric: recommendation_groundedness
+threshold: 0.80
+description: >-
+  Fraction of results whose every recommendation carries at least one citation. A
+  recommendation built on uncited evidence fails.
+companion_metrics:
+  citation_accuracy:
+    threshold: 0.90
+    description: >-
+      Fraction of cited source ids that appear in the result's own derived evidence set
+      (no fabricated citations).
+  pii_safety:
+    threshold: 0.99
+    description: >-
+      No unredacted customer PII (SG NRIC, JP My Number, AU TFN, email, phone) survives into
+      the produced recommendation text or the audit records. Detected with the SAME
+      jurisdiction pattern source the runtime redactor uses, so a single leak means the
+      redact-before-audit boundary was bypassed; a single leak drops the metric below 0.99.
