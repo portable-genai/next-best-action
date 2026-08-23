@@ -125,7 +125,8 @@ python eval/run_eval.py        # exit 0
 See `DEMO.md` for the local (offline) and GCP demos (region + vertical selectable),
 `ARCHITECTURE.md` for the hexagon, and `SPEC.md` for the domain contract.
 
-`consent-preference-kit` is a private, commit-locked catalog common. CI and image-build source
-access is documented in [`docs/private-dependencies.md`](docs/private-dependencies.md); runtime
-Mkt6 authentication is separate: managed profiles mint an audience-bound Google ID token through
-Workload Identity; non-GCP/local consumers may use the kit's `CONSENT_S2S_*` credentials.
+`consent-preference-kit` is a public, commit-locked catalog common, so source installation and
+the image build need no credential at all: the `git+https` line in the lockfile resolves
+anonymously. Runtime Mkt6 authentication is separate and unchanged: managed profiles mint an
+audience-bound Google ID token through Workload Identity; non-GCP/local consumers may use the
+kit's `CONSENT_S2S_*` credentials.

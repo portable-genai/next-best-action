@@ -31,14 +31,15 @@ COPY requirements-gcp.lock ./
 COPY src ./src
 COPY config ./config
 
-RUN --mount=type=secret,id=catalog_commons_token \
-    commons_token="$(cat /run/secrets/catalog_commons_token)" \
- && test -n "$commons_token" \
- && git config --global url."https://x-access-token:${commons_token}@github.com/".insteadOf "https://github.com/" \
- && pip install --upgrade pip \
+# No build credential. Every kit this repo pins is public in `portable-genai`, so the
+# commit-pinned `git+https` lines in the lockfile resolve anonymously. This layer used to mount
+# a GitHub App installation token as a BuildKit secret and FAIL CLOSED without one
+# (`test -n "$commons_token"`), which outlived its reason when `consent-preference-kit` went
+# public: an image that nobody without a credential can build is the opposite of the
+# zero-credential install this repo's own docs claim.
+RUN pip install --upgrade pip \
  && pip install -r requirements-gcp.lock \
- && pip install --no-deps . \
- && git config --global --unset-all url."https://x-access-token:${commons_token}@github.com/".insteadOf
+ && pip install --no-deps .
 
 # --------------------------------------------------------------------------- #
 # Runtime — slim, non-root, venv copied from builder.

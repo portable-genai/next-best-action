@@ -70,8 +70,8 @@ export MKT_NBA_CMEK_KEY="$(terraform output -raw cmek_key)"
 export MKT_NBA_MODEL_ARMOR_TEMPLATE="$(terraform output -raw model_armor_template)"
 export MKT_NBA_LOG_BUCKET="$(terraform output -raw log_bucket)"
 
-# 3. Install the managed stack and run the API. Private package source access is described in
-#    docs/private-dependencies.md.
+# 3. Install the managed stack and run the API. Every pinned kit is public, so this needs no
+#    source credential.
 pip install -e ".[gcp,dev]"
 export GOOGLE_CLOUD_PROJECT=your-sg-project MKT_NBA_PROFILE=gcp
 export MKT_CONSENT_STORE_URL=https://mkt6.example.internal

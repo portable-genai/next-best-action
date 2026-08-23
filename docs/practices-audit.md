@@ -43,7 +43,7 @@ and E1.
 | **C10** No secret values in the repo `[all]` | PASS | `config/settings.yaml` names only env vars (`*_env` / `${VAR}`); a literal-secret grep over `config/` is clean. |
 | **D1** Locked, reproducible installs everywhere `[all]` **(load-bearing)** | PASS | Committed locks pin all five catalog commons to 40-character commits, including private `consent-preference-kit@v0.0.1`; `make lock` recompiles and restores the tag-to-commit evidence header. The Dockerfile installs the managed lock. |
 | **D2** Digest-pinned images, SHA-pinned Actions, dependabot, CI audit `[all]` **(load-bearing)** | PASS | Base image digest-pinned, Actions SHA-pinned, dependabot present, `pip-audit` + `npm audit` hard CI gates. |
-| **D3** Whole gate runs offline, zero org secrets `[all]` **(load-bearing)** | PARTIAL | The gate remains fully offline at runtime under `MKT_NBA_PROFILE=local` and needs no GCP or organization service credentials. Source installation now needs a short-lived GitHub App token because `consent-preference-kit` is private. CI mints a token scoped only to that repo and image builds use a BuildKit secret, but the two GitHub App repository secrets still need external provisioning; see `docs/private-dependencies.md`. |
+| **D3** Whole gate runs offline, zero org secrets `[all]` **(load-bearing)** | PASS | The gate is fully offline at runtime under `MKT_NBA_PROFILE=local` and needs no GCP or organization service credentials. The one thing that made this PARTIAL was source installation: `consent-preference-kit` was private, so the build minted a short-lived GitHub App token and the image build mounted it as a BuildKit secret, fail-closed, leaving two repository secrets that needed external provisioning. The kit has been public in `portable-genai` since 2026-08-22, so the commit-pinned `git+https` line resolves anonymously and all of that machinery is removed rather than left dormant: the Dockerfile installs with no secret mount, and no workflow mints a token. Proved by execution rather than by reading the diff: `docker build -t next-best-action:credential-free-proof .` completes with no BuildKit secret and no git credential configured, which is the build that could not have succeeded before. `docs/private-dependencies.md` is deleted; it documented a posture that no longer exists. |
 | **D4** Non-root, minimal, healthchecked container `[infra]` | PASS | `Dockerfile`: multi-stage, `USER appuser` (uid 10001), `HEALTHCHECK` on `/healthz`, `EXPOSE 8104`, `MKT_NBA_PROFILE=gcp` set explicitly; the runtime stage copies only the venv (no build-essential). |
 | **D5** Deploy-time residency/sovereignty, parameterised `[infra]` | PASS | The existing region, per-service CMEK, no-SA-key, VPC-SC and WORM controls remain parameterised. CI and `make tf-validate` now run format, backend-free init and validation without credentials; local validation passed with google/google-beta 6.50.0. |
 | **E1** Offline eval smoke guards merge; Hrz4 owns promotion `[agentic]` **(load-bearing)** | PASS | `eval/run_eval.py` has the `--mode smoke|gate` split via the shared `agent-eval-kit` scaffold; `remote_evaluation.py` re-based on the shared `PromotionGateClient` (registered bundle `mkt5-nba` and the n_examples passthrough both pinned by the respx contract test); gate mode refuses to run outside `MKT_NBA_PROFILE=platform|gcp`. The pii-kit wiring is untouched. |
@@ -60,12 +60,12 @@ and E1.
 | **G6** Contribution docs cover full extension touch list, enforced by a test `[all]` | PASS | `CONTRIBUTING.md` now has explicit adapter and new-port checklists covering Protocol, re-export, all profile bindings, `PORT_PROTOCOLS`, composition-root wiring, behavior tests and evidence docs. |
 | **G7** Markdown discipline: minimise em-dashes, validate mermaid `[all]` | PASS | An em-dash count (grep for U+2014) is 0 across every root and `docs/` markdown file; no mermaid blocks present. |
 
-**Verdict counts:** 38 PASS, 1 PARTIAL, 0 FAIL, 2 N-A (41 checks).
-The single remaining PARTIAL is load-bearing D3 (source installation still needs user-owned read
-access while `consent-preference-kit` is private). Fourteen of 15 load-bearing checks are PASS;
-D3 is PARTIAL only because the private client kit requires externally provisioned, read-only
-GitHub App source access. G4 is a retired practice. On any conflict the matrix and
-the maintainer's per-system register are authoritative for the current verdicts.
+**Verdict counts:** 39 PASS, 0 PARTIAL, 0 FAIL, 2 N-A (41 checks).
+The one PARTIAL this file used to carry was load-bearing D3, and its stated prerequisite was
+`consent-preference-kit` being private. That prerequisite dissolved on 2026-08-22 when every kit
+went public in `portable-genai`, so D3 is PASS and all 15 load-bearing checks are PASS. G4 is a
+retired practice. On any conflict the matrix and the maintainer's per-system register are
+authoritative for the current verdicts.
 
 ## Gaps carried to systems/
 
@@ -94,10 +94,12 @@ the maintainer's per-system register are authoritative for the current verdicts.
 
 **Open gaps** (append to the row's audit note):
 
-- **D3 (PARTIAL, external):** runtime and the complete gate are offline and need no cloud or
-  organization service credential, but a clean source install still needs user-owned read access
-  while `consent-preference-kit` is private. Publishing that canonical client or changing its
-  repository visibility is outside this repo's authority.
+- **D3 (CLOSED 2026-08-23):** runtime and the complete gate were already offline and needed no
+  cloud or organization service credential; what kept this open was a clean source install
+  needing user-owned read access while `consent-preference-kit` was private, which was outside
+  this repo's authority to change. The migration published every kit on 2026-08-22, so the
+  external prerequisite is gone and the credential machinery it justified has been removed
+  rather than left dormant.
 
 F2 is PASS: the gated demo contract does not stop at the browserless
 render. `scripts/demo_selftest.py` starts the real presenter server and reads every figure
