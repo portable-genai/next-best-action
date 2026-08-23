@@ -1,8 +1,9 @@
 name: CI
 
 # Lint + format + type-check + tests + eval gate on the LOCAL profile (a WORKING offline
-# stack), so CI needs NO Google Cloud credentials and NO google-cloud-* packages. It does need
-# a short-lived, read-only GitHub App token for the private consent client kit. Integration
+# stack), so CI needs NO Google Cloud credentials, NO google-cloud-* packages and no source
+# credential at all: consent-preference-kit went public with the migration, so the token steps
+# this comment used to describe are gone from the file below. Integration
 # tests are deselected. The contract + gcp-import tests additionally prove the onprem
 # fail-fast family and the lazy-import GCP family with the SDKs absent.
 
