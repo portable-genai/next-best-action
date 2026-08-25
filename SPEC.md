@@ -45,7 +45,7 @@ and why. The consequential decisions are deterministic and auditable; the LLM on
 | `ObservabilityTracerPort` | reasoning-loop traces + token metrics (Hrz5) | Cloud Trace / OTel |
 | `EvaluationGatePort` | Hrz4 promotion gate | Gen AI evaluation service |
 | `AgentRegistryPort` | A2A AgentCard registry (Hrz3) | A2A registry |
-| `ToolCatalogPort` | governed MCP tool catalog | MCP 2025-11-25 |
+| `ToolCatalogPort` | governed MCP tool catalog | MCP 2026-07-28 |
 
 ## Pipeline (RecommendationService.recommend)
 
