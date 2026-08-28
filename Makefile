@@ -65,7 +65,13 @@ eval:
 portability:
 	PYTHONPATH=src $(BIN)/python scripts/portability_demo.py
 
-gate: lint format typecheck test eval demo-selftest portability
+plugin: ## Render the Agent Plugins 1.0.0 directory from this repo's own declarations.
+	python scripts/render_plugin.py --dest dist/plugin
+
+mcp-serve: ## Serve the governed tool catalog over MCP 2026-07-28 (stdio; needs [gcp]).
+	python -m next_best_action.mcp
+
+gate: lint format typecheck test eval demo-selftest portability plugin
 
 ui-install: ## Install the console's locked dependencies (proves package-lock.json is still valid).
 	npm ci --prefix $(UI_DIR)
