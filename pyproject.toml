@@ -56,7 +56,7 @@ gcp = [
   "google-cloud-logging>=3.11",
   "opentelemetry-sdk>=1.27",
   "opentelemetry-exporter-gcp-trace>=1.7",
-  "a2a-sdk>=1.1",
+  "a2a-sdk[http-server]>=1.1",
   "mcp>=2.1",
 ]
 # The headless-browser half of the F2 demo proof. Kept OUT of [dev] on purpose: the browser
