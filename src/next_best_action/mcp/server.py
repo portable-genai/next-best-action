@@ -18,9 +18,9 @@ from __future__ import annotations
 from typing import Any
 
 from hex_service_kit import mcpserve
-from hex_service_kit.identity import Principal
 
 from ..config import build_container
+from ..domain.identity import Principal
 from ..domain.models import Market, RecommendationRequest, RetrievalQuery, Vertical
 
 #: The tools this module answers, as data, so a test can hold it against the catalog.

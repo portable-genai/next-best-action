@@ -23,7 +23,11 @@ resource "google_org_policy_policy" "resource_locations" {
     rules {
       values {
         # e.g. "in:asia-southeast1-locations" : the selected region plus its sub-locations.
-        allowed_values = ["in:${var.region}-locations"]
+        # var.resource_location_values overrides this only where a required service has no
+        # single-region presence (Agent Search has none at all; Document AI has none until
+        # in-region access is granted). See that variable: widening is a jurisdiction
+        # statement, not an exception list.
+        allowed_values = length(var.resource_location_values) > 0 ? var.resource_location_values : ["in:${var.region}-locations"]
       }
     }
   }

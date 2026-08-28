@@ -90,7 +90,9 @@ def test_a_loopback_peer_still_gets_the_offline_demo(path: str) -> None:
     assert TestClient(app_module.app, client=LOOPBACK_PEER).get(path).status_code == 200
 
 
-def test_the_loopback_peer_still_gets_the_whole_seeded_persona_list(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_loopback_peer_still_gets_the_whole_seeded_persona_list(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """The picker the local UI needs is intact; only the LAN is cut off from it."""
     monkeypatch.setenv("MKT_NBA_PROFILE", "local")
     deps.get_container.cache_clear()
