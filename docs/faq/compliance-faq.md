@@ -65,9 +65,18 @@ than hand-maintain the table.
 
 ### Is data residency enforced?
 
-Yes, at deploy time: each market pins a single in-country region (JP to Tokyo, AU to Sydney,
-SG to Singapore), validated to fail fast, with regional endpoints, a `gcp.resourceLocations`
-Org Policy allowlist, CMEK bound per service, and a VPC-SC perimeter (P-03, P-09). Residency is
+Yes at deploy time, with one stated exception: each market pins a single in-country region (JP
+to Tokyo, AU to Sydney, SG to Singapore), validated to fail fast, with regional endpoints, a
+`gcp.resourceLocations` Org Policy allowlist, CMEK bound per service, and a VPC-SC perimeter
+(P-03, P-09).
+
+**Agent Search is the one service that follows none of it:** it serves only `global` / `us` /
+`eu`, so the retrieval corpus defaults to `global` and is unlocated. `us` or `eu` confines it to
+one jurisdiction where an obligation bites, and the location Org Policy must be wide enough to
+permit the choice. It is recorded in [`COMPLIANCE.md`](../../COMPLIANCE.md) rather than
+absorbed.
+
+Residency is
 a deploy-time pin and is orthogonal to portability (a second market is a config + tfvars change,
 not a fork). The one honest gap is a CI Terraform `fmt` / `validate` job (audit check D5,
 PARTIAL).
