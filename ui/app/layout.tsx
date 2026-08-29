@@ -11,7 +11,7 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "D5 Next-Best-Action",
+  title: "Next-Best-Action",
   description:
     "Cited next-best-action recommendations from deterministic eligibility, consent and ranking, generic across banking and online retail and the JP/AU/SG markets.",
 };
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <header className="border-b border-ink-200 bg-white">
               <div className="mx-auto max-w-6xl px-6 py-4">
                 <h1 className="text-lg font-semibold text-ink-900">
-                  D5 · Next-Best-Action: Recommendations and Cross-Sell
+                  Next-Best-Action: Recommendations and Cross-Sell
                 </h1>
                 <p className="text-sm text-ink-500">
                   Cited next-best-action recommendations · JP / AU / SG · synthetic data is
