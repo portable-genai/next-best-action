@@ -66,7 +66,7 @@ export default function Page() {
   return (
     <main className="mx-auto flex max-w-6xl gap-6 p-6">
       <aside className="w-80 shrink-0">
-        <h1 className="text-base font-semibold">D5 Next-Best-Action</h1>
+        <h1 className="text-base font-semibold">Next-Best-Action</h1>
         <p className="mb-4 text-xs text-ink-500">
           Cited next-best-action recommendations from deterministic eligibility, consent and
           ranking, generic across banking and online retail and the JP/AU/SG markets.
