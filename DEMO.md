@@ -80,10 +80,15 @@ Unattended (self-test / recording): `HEADLESS=1 DEMO_AUTO=1 .venv/bin/python scr
 # Terminal 1 - the real FastAPI service on the Mkt5 port:
 MKT_NBA_PROFILE=local uvicorn next_best_action.api.app:app --port 8104
 
-# Terminal 2 - the Next.js console:
-cd ui && npm install && npm run dev
+# Terminal 2 - the Next.js console, on a PRODUCTION build:
+cd ui && npm install && npm run build && npm run start
 # open http://localhost:3000, pick a customer / market / vertical, click "Recommend".
 ```
+
+`NEXT_PUBLIC_API_BASE` needs no setting here: the console already defaults to `:8104`, the
+port terminal 1 binds. Demo the built console, never `make run-ui`: that target is the
+developer loop and serves `next dev`, and the standing rule for every demo in the fleet is
+`org-metadata/docs/demos/demo-inventory.md`: production builds only.
 
 ### F. The eval gate (Hrz4)
 
