@@ -21,8 +21,10 @@ concurrency:
 
 env:
   # The eval gate runs deterministically offline (the in-repo evaluator), so it needs no
-  # cloud credentials. It only needs the read-only GitHub App credential used to install the
-  # private consent wire kit. Switch to gcp in a protected environment for the live evaluator.
+  # cloud credentials and no source credential either: consent-preference-kit went public with
+  # the migration, so the read-only GitHub App credential this comment used to describe is gone
+  # from the file below, exactly as in ci.yaml. Switch to gcp in a protected environment for the
+  # live evaluator.
   MKT_NBA_PROFILE: local
 
 jobs:

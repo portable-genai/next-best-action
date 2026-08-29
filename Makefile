@@ -13,7 +13,10 @@ API_APP := next_best_action.api.app:app
 API_HOST ?= 127.0.0.1  # no-auth local dev binds loopback; override deliberately
 API_PORT ?= 8104
 UI_DIR := ui
-DEMO_PORT ?= 8110
+# 8711, not the 8110 this line was copied from: that is market-intelligence's demo port, so the
+# two Mkt demo servers collided, and `make demo-server` bound a port that neither this repo's
+# scripts/demo_playwright.py nor DEMO.md nor scripts/README.md ever points a browser at.
+DEMO_PORT ?= 8711
 TF_DIR := infra/terraform
 
 export MKT_NBA_PROFILE := $(PROFILE)
