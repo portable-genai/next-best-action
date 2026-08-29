@@ -2,7 +2,7 @@
 
 When D5 reuses the shared platform, the offer / policy corpus is the **A2 Enterprise
 Knowledge Base**. This adapter implements the port by POSTing to A2's ``/v1/search`` (base
-URL from ``HRZ_KB_URL``). Constructs cleanly with no Google Cloud SDK; the HTTP body is
+URL from ``KNOWLEDGE_BASE_URL``). Constructs cleanly with no Google Cloud SDK; the HTTP body is
 wired in the platform phase.
 """
 
@@ -25,7 +25,7 @@ class RemoteKnowledgeBaseAdapter:
 
     def __init__(self, settings: object) -> None:
         self._settings = settings
-        self._base_url = setting_or_default("HRZ_KB_URL", _DEFAULT_URL).rstrip("/")
+        self._base_url = setting_or_default("KNOWLEDGE_BASE_URL", _DEFAULT_URL).rstrip("/")
 
     def search(self, query: RetrievalQuery) -> list[RetrievedPassage]:
         raise NotImplementedError(_PHASE)
