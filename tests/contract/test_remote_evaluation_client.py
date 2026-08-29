@@ -95,7 +95,7 @@ def _gate_body(**overrides: Any) -> dict[str, Any]:
 
 
 def _adapter(monkeypatch: pytest.MonkeyPatch) -> RemoteEvaluationAdapter:
-    monkeypatch.setenv("HRZ_QUALITY_URL", _BASE)
+    monkeypatch.setenv("QUALITY_GATE_URL", _BASE)
     return RemoteEvaluationAdapter(Settings())
 
 
