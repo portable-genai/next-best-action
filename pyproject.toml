@@ -58,6 +58,10 @@ gcp = [
   "opentelemetry-exporter-gcp-trace>=1.7",
   "a2a-sdk[http-server]>=1.1",
   "mcp>=2.1",
+  # Bound as the gcp implementation in config/settings.yaml and imported LAZILY by the
+  # adapters, so each module imported clean while its port was DEAD on the managed
+  # profile. Found by the lint-gcp job, the first check able to see these imports.
+  "google-cloud-dlp>=3.0",
 ]
 # The headless-browser half of the F2 demo proof. Kept OUT of [dev] on purpose: the browser
 # binary is a network download, and the day-one offline gate must install and run with no
