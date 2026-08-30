@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Mapping, Sequence
+from datetime import date, datetime
 from typing import Any
 
 from ...config import Settings
@@ -80,11 +81,23 @@ class VertexRecommendationAdapter:
     ) -> list[dict[str, Any]]:
         from google.cloud import bigquery  # noqa: PLC0415
 
-        query_parameters = []
+        # Annotated, because mypy otherwise infers the element type from the FIRST append and
+        # then refuses the second: a scalar parameter could never join a list of array ones.
+        # The scalar value is narrowed for the same reason the signature takes object --
+        # the caller supplies whatever the SQL needs, and BigQuery accepts exactly these.
+        query_parameters: list[Any] = []
         for name, kind, value in parameters:
             if kind == "ARRAY<STRING>":
                 query_parameters.append(bigquery.ArrayQueryParameter(name, "STRING", value))
             else:
+                if (
+                    not isinstance(value, (str, int, float, bool, date, datetime))
+                    and value is not None
+                ):
+                    raise TypeError(
+                        f"query parameter {name!r} of kind {kind} is not a BigQuery scalar: "
+                        f"{type(value).__name__}"
+                    )
                 query_parameters.append(bigquery.ScalarQueryParameter(name, kind, value))
         job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
         rows = (
