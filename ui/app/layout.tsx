@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { ProvenanceBanner } from "./ProvenanceBanner";
 import "./globals.css";
 
 // Required by the nonce CSP, not a performance preference. `proxy.ts` mints a per-request script
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className={embed ? undefined : "min-h-screen"}>
+        <ProvenanceBanner />
         {embed ? (
           children
         ) : (

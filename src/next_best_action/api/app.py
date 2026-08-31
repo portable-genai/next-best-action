@@ -246,6 +246,8 @@ def healthz() -> HealthModel:
         profile=settings.exposure_profile,
         market=settings.market,
         vertical=settings.vertical,
+        runtime=settings.runtime,
+        generator_model=settings.generator_model,
     )
 
 
