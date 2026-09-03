@@ -1,7 +1,7 @@
 """LlmPort — LLM text/reasoning for explaining "why recommended".
 
 Primary GCP adapter: Gemini models on the Gemini Enterprise Agent Platform
-(``gemini-3.5-flash`` for explanation, ``gemini-3.1-flash-lite`` for triage). The LLM only
+(``gemini-3.5-flash`` for explanation, ``gemini-3.5-flash`` for triage). The LLM only
 explains the already-computed deterministic recommendation; it never decides the score, the
 eligibility, the consent or the ranking.
 """

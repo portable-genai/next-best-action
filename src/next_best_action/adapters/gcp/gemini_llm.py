@@ -2,7 +2,7 @@
 
 Wraps the unified **Google GenAI SDK** (``google-genai``) against the **Gemini Enterprise
 Agent Platform** (Vertex backend). Reasoning/narration uses ``gemini-3.5-flash``;
-triage/classification uses ``gemini-3.1-flash-lite`` (both pinned from settings; the
+triage/classification uses ``gemini-3.5-flash`` (both pinned from settings; the
 floating ADK default model is never used).
 
 In D5 the LLM only explains "why recommended" over the already-computed deterministic ranking (the
