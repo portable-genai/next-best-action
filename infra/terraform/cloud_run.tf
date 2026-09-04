@@ -1,4 +1,4 @@
-# cloud_run.tf : Cloud Run v2 service for the Mkt5 Next-Best-Action API.
+# cloud_run.tf : Cloud Run v2 service for the next-best-action Next-Best-Action API.
 #
 # Principle map:
 #   Managed-first : the FastAPI service (next_best_action.api.app:app) runs on Cloud Run as
@@ -9,7 +9,7 @@
 #               adapters and refuses every end-user request, so production must set it).
 #   Minimal surface : ingress is internal + load balancer, not the open internet. All egress
 #               uses Direct VPC egress on the reviewed Shared VPC, which is required for the
-#               Mkt6 internal-only run.app endpoint to recognise Mkt5 as an internal source.
+#               marketing-compliance-gate internal-only run.app endpoint to recognise next-best-action as an internal source.
 #
 # The container listens on 8104 (Dockerfile EXPOSE / PORT) and serves /healthz.
 # verify: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service
@@ -35,7 +35,7 @@ resource "google_cloud_run_v2_service" "nba" {
     }
 
     # ALL_TRAFFIC is deliberate. A run.app URL is not an RFC1918 destination; routing only
-    # private ranges would bypass the VPC and Mkt6's internal ingress would reject the call.
+    # private ranges would bypass the VPC and marketing-compliance-gate's internal ingress would reject the call.
     vpc_access {
       egress = "ALL_TRAFFIC"
 
@@ -128,7 +128,7 @@ resource "google_cloud_run_v2_service" "nba" {
 
     precondition {
       condition     = data.google_compute_subnetwork.shared_cloud_run.private_ip_google_access
-      error_message = "The Shared VPC subnet must enable Private Google Access so all-traffic egress can reach Mkt6 without leaving the VPC path."
+      error_message = "The Shared VPC subnet must enable Private Google Access so all-traffic egress can reach marketing-compliance-gate without leaving the VPC path."
     }
 
     precondition {

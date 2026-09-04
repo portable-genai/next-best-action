@@ -1,4 +1,6 @@
-"""Consent-port tests: one Mkt6 contract, with local parity and managed fail-closed wiring."""
+"""Consent-port tests: one marketing-compliance-gate contract, with local parity and managed
+fail-closed wiring.
+"""
 
 from __future__ import annotations
 

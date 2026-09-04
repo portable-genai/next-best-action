@@ -1,11 +1,11 @@
 """Contract test: the platform eval adapter speaks A4's hardened, bundle-driven HTTP shape.
 
-Pins the request/response contract of :class:`RemoteEvaluationAdapter` against the A4 (Hrz4)
-AI-quality service without a live server: HTTP is intercepted with ``respx``. The request
-assertions lock the details that A4's hardening depends on — a *structured* target, the
-top-level ``dataset_id`` mirroring ``target.dataset_id``, metric selection via the ``bundle``
-field only (never a metric-name list), ``results[]`` parsed into an ``EvalReport``, and a
-``gate()`` that POSTs ``/v1/gate``.
+Pins the request/response contract of :class:`RemoteEvaluationAdapter` against the A4
+(model-quality-gate) AI-quality service without a live server: HTTP is intercepted with ``respx``.
+The request assertions lock the details that A4's hardening depends on — a *structured* target, the
+top-level ``dataset_id`` mirroring ``target.dataset_id``, metric selection via the ``bundle`` field
+only (never a metric-name list), ``results[]`` parsed into an ``EvalReport``, and a ``gate()`` that
+POSTs ``/v1/gate``.
 
 The RESPONSE fixtures model the hardened ``agent-eval-kit`` contract, which is far stricter
 than a naked aggregate boolean. The client RE-DERIVES every verdict from

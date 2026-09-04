@@ -314,8 +314,10 @@ class ConsentStatus(StrEnum):
 class ConsentRecord:
     """A customer's marketing-consent state for one channel (per market/vertical).
 
-    Local fixtures mirror jurisdiction-sensitive consent data for the offline Mkt6 stand-in.
-    Production decisions come from Mkt6 through ``ConsentPort``; an offer without an explicit
+    Local fixtures mirror jurisdiction-sensitive consent data for the offline
+    marketing-compliance-gate stand-in.
+    Production decisions come from marketing-compliance-gate through ``ConsentPort``; an offer
+    without an explicit
     allow on its channel is suppressed before it can be recommended.
     """
 
@@ -329,7 +331,9 @@ class ConsentRecord:
 
 @dataclass(frozen=True, slots=True)
 class ConsentDecision:
-    """The Mkt6 consent decision mapped onto one offer without losing replay identity."""
+    """The marketing-compliance-gate consent decision mapped onto one offer without losing replay
+    identity.
+    """
 
     offer_id: str
     allowed: bool

@@ -2,16 +2,17 @@
 
 Lives in the adapter layer (not the pure domain) because it depends on the kit. This is the
 redact-before-wire boundary for rule R8 (R1 / P-04): the customer descriptor, summary and citation
-provenance are scrubbed before they leave the process, so no raw customer identifier reaches Hrz7.
-D5 is the only per-customer marketing vertical, so redact-before-wire is load-bearing here, not
-defensive: the internal customer key is pseudonymized to a stable, non-reversible token (the same
-scheme the audit sink uses, so a checker can still correlate) and every jurisdiction's national id
-plus universal email/phone is masked with the shared ``pii-kit`` rows (the same pack the redaction
-adapter uses). Hrz7 redacts again before its own audit write (defense in depth).
+provenance are scrubbed before they leave the process, so no raw customer identifier reaches
+human-review-console. D5 is the only per-customer marketing vertical, so redact-before-wire is
+load-bearing here, not defensive: the internal customer key is pseudonymized to a stable,
+non-reversible token (the same scheme the audit sink uses, so a checker can still correlate) and
+every jurisdiction's national id plus universal email/phone is masked with the shared ``pii-kit``
+rows (the same pack the redaction adapter uses). human-review-console redacts again before its own
+audit write (defense in depth).
 
 The maker (the agent/operator that originated the set) and the ``tenant`` are asserted here and
-trusted by Hrz7 because this is an authenticated S2S caller; the ``tenant`` is the server-verified
-tenant threaded from the caller's :class:`Principal`, never a client-asserted one.
+trusted by human-review-console because this is an authenticated S2S caller; the ``tenant`` is the
+server-verified tenant threaded from the caller's :class:`Principal`, never a client-asserted one.
 """
 
 from __future__ import annotations
@@ -110,7 +111,9 @@ def _kit_citations(result: RecommendationSet) -> tuple[KitCitation, ...]:
 def recommendation_set_to_review(
     result: RecommendationSet, *, maker: str, tenant: str = ""
 ) -> Review:
-    """Build the review a producer submits to Hrz7 when a recommendation set escalates."""
+    """Build the review a producer submits to human-review-console when a recommendation set
+    escalates.
+    """
     customer_id = result.customer_id
     pseudonym = _pseudonym(customer_id)
     descriptor = (

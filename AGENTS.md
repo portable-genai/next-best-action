@@ -7,7 +7,7 @@ here. Read it first. This file carries only what is specific to this one.
 
 ## What this is
 
-Catalog id **Mkt5**. A multi-vertical next-best-action engine: candidate filtering, eligibility
+Catalog id `next-best-action`. A multi-vertical next-best-action engine: candidate filtering, eligibility
 and suitability, and ranking are deterministic unit-tested engines, and the model only explains
 why an offer was recommended.
 
@@ -15,7 +15,7 @@ why an offer was recommended.
 
 | | |
 |---|---|
-| Catalog id | `Mkt5` |
+| Catalog id | `next-best-action` |
 | Package | `src/next_best_action/` |
 | Profile variable | `MKT_NBA_PROFILE` |
 | Adapter families | `gcp`, `local`, `onprem`, `platform` |
@@ -26,7 +26,7 @@ off what it publishes. An unset value is no choice: it binds the SDK-free adapte
 none of the `local` relaxations, so `adapters/local/identity.py` refuses to seed a dev persona
 until the profile was named deliberately.
 
-Marketing consent is a cited decision obtained through Mkt6's `consent-preference-kit` client
+Marketing consent is a cited decision obtained through `marketing-compliance-gate`'s `consent-preference-kit` client
 contract (`ports/consent.py`), never a second consent store in this repository.
 
 ## What this repository still owes

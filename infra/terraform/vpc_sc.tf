@@ -14,7 +14,7 @@
 # legitimate path is broken, then set vpc_sc_dry_run = false to enforce. Never enforce blind
 # on a path you have not first watched in dry-run.
 #
-# The Mkt6 governance stack owns the perimeter in the reference topology. This module keeps the
+# The marketing-compliance-gate governance stack owns the perimeter in the reference topology. This module keeps the
 # complete contract so ownership can be moved deliberately, but defaults to count = 0. Never
 # set manage_shared_vpc_sc_perimeter in both states.
 # verify: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/access_context_manager_service_perimeter

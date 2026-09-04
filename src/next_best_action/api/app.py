@@ -257,7 +257,7 @@ def healthz() -> HealthModel:
     tags=["governance"],
 )
 def agent_card() -> AgentCardModel:
-    """Serve the A2A AgentCard for this agent (Hrz3 discovery, rule R4).
+    """Serve the A2A AgentCard for this agent (agent-registry discovery, rule R4).
 
     Pure and identity-agnostic: the card advertises the agent's governed skills so a peer
     agent or the registry sees one capability surface. Built from ``agent.agent_card`` with no

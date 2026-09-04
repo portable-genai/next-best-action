@@ -1,7 +1,7 @@
 # FAQ index
 
 Answers to the questions different teams ask when evaluating, adopting, or reviewing this
-repository (Mkt5 Next-Best-Action) as a common base. Each file is written for a specific
+repository (`next-best-action` Next-Best-Action) as a common base. Each file is written for a specific
 audience; skim the one that matches your role.
 
 | FAQ | For | Answers |
@@ -12,9 +12,9 @@ audience; skim the one that matches your role.
 | [portability-faq.md](portability-faq.md) | Architecture / cloud / exit planning | no-lock-in, the four profiles, on-prem / sovereign exit, open-format export |
 | [adoption-faq.md](adoption-faq.md) | Engineering leads forking the repo | rename, upstream fixes, extension points, versioning |
 
-Mkt5 is the **only per-customer** marketing system in the catalog, so its data-protection,
+`next-best-action` is the **only per-customer** marketing system in the catalog, so its data-protection,
 tenancy and consent controls are load-bearing (unlike the broader-audience marketing repos
-Mkt1..Mkt4, which handle no customer PII). These FAQs deliberately do **not** re-document
+`market-intelligence`..`performance-marketing-optimisation`, which handle no customer PII). These FAQs deliberately do **not** re-document
 capabilities owned by sibling systems in the
 [catalog](https://github.com/portable-genai). Where a concern belongs to another
 repo (the guardrail gateway, the governed knowledge base, the eval gate, the human-review

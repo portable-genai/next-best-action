@@ -78,7 +78,7 @@ agent_engine:
   resource_name: ${MKT_AGENT_ENGINE:-}
   display_name: next-best-action
 
-# The one catalog consent and preference store (Mkt6). The managed adapter refuses when this
+# The one catalog consent and preference store (marketing-compliance-gate). The managed adapter refuses when this
 # is absent; local binds a synthetic, deterministic stand-in using the same versioned wire types.
 # Managed profiles mint a Google ID token for the reviewed custom audience through Workload
 # Identity. The kit's CONSENT_S2S_* env credentials remain only for non-GCP/local consumers.
@@ -130,7 +130,7 @@ markets:
 # each adapter class takes a single Settings argument.
 # ----------------------------------------------------------------------------- #
 adapters:
-  # Consent is a separate port because Mkt6 is the single system of record. The recommendation
+  # Consent is a separate port because marketing-compliance-gate is the single system of record. The recommendation
   # adapters no longer own or decide consent. Local is a faithful synthetic stand-in; onprem
   # refuses until the client preference centre is bound.
   consent:
@@ -198,9 +198,9 @@ adapters:
     platform: next_best_action.adapters.gcp.iap_identity:IapIdentityAdapter
     local: next_best_action.adapters.local.identity:LocalPersonaIdentityAdapter
     onprem: next_best_action.adapters.onprem.identity:OnPremIdentityAdapter
-  # Rule R8: a RecommendationSet that requires_human_review is ROUTED to the Hrz7 Human-Review &
+  # Rule R8: a RecommendationSet that requires_human_review is ROUTED to the human-review-console Human-Review &
   # Maker-Checker Console via the shared review-kit, not left as a per-repo boolean. local
-  # enqueues to an in-memory outbox (offline demo/test); gcp + platform submit over S2S to Hrz7's
+  # enqueues to an in-memory outbox (offline demo/test); gcp + platform submit over S2S to human-review-console's
   # service intake; onprem is a fail-fast sovereign-target placeholder.
   review_router:
     gcp: next_best_action.adapters.platform.review_router:PlatformReviewRouter

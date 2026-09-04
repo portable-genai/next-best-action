@@ -49,7 +49,7 @@ output "model_armor_template" {
 
 # ------------------------------- Cloud Run ---------------------------------- #
 output "service_url" {
-  description = "Base URL of the Mkt5 Cloud Run service."
+  description = "Base URL of the next-best-action Cloud Run service."
   value       = google_cloud_run_v2_service.nba.uri
 }
 
@@ -64,12 +64,12 @@ output "runtime_service_account" {
 }
 
 output "consent_store_url" {
-  description = "Reviewed Mkt6 consent authority URL injected into the service."
+  description = "Reviewed marketing-compliance-gate consent authority URL injected into the service."
   value       = var.consent_store_url
 }
 
 output "consent_store_audience" {
-  description = "Custom OIDC audience Mkt5 mints for and Mkt6 verifies."
+  description = "Custom OIDC audience next-best-action mints for and marketing-compliance-gate verifies."
   value       = var.consent_store_audience
 }
 

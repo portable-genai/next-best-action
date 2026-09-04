@@ -42,8 +42,8 @@ regex redactor, the GCP DLP custom info types and the eval leak check from one s
 ### What about the service-to-service calls in the `platform` profile?
 
 The outbound S2S path (`adapters/platform/_s2s.py`) attaches a bearer credential and enforces
-an https-only base-URL check outside loopback. The two live outbound calls, the Hrz4 eval
-client (`remote_evaluation.py`, the shared `PromotionGateClient`) and the Hrz7 review router
+an https-only base-URL check outside loopback. The two live outbound calls, the `model-quality-gate` eval
+client (`remote_evaluation.py`, the shared `PromotionGateClient`) and the `human-review-console` review router
 (the shared `review-kit` client), both carry the S2S bearer; the remaining platform
 delegates are phase stubs. The receiving platform services own verification.
 
@@ -72,7 +72,7 @@ export / restore, and a `verify_chain()` that catches in-place edits and interio
 The module docstring states its honest limits (a chain carrying no secret cannot alone detect
 tail truncation or a full rewrite). In production the `gcp` profile uses a locked WORM bucket
 (`retention_days: 2557`, ~7 years) which provides non-rewritability itself. This repo does not
-*replace* the platform audit system (Hrz5); see [features-faq.md](features-faq.md).
+*replace* the platform audit system (`agent-observability`); see [features-faq.md](features-faq.md).
 
 ### Supply chain: are dependencies pinned and scanned?
 

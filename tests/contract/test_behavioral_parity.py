@@ -33,13 +33,13 @@ is filled in, add a respx-mocked sibling here and assert ``local == platform`` d
 
 Placeholder exclusions (genuinely-wired platform ports, so NOT in the fail-fast list):
 
-* ``evaluation`` : its ``platform`` adapter is wired against Hrz4 (see
-  ``tests/contract/test_remote_evaluation_client.py``); it is not a NotImplementedError stub.
-* ``review_router`` : its ``platform`` adapter (``PlatformReviewRouter``) makes a real S2S
-  call to Hrz7 via ``review-kit``; it raises ``RuntimeError`` when unconfigured, not the
-  scaffold's ``NotImplementedError``, so it is not a placeholder either.
-* ``identity`` : its ``platform`` binding is the GCP IAP adapter (needs the cloud SDK), not a
-  local-constructible ``remote_*`` stub.
+* ``evaluation`` : its ``platform`` adapter is wired against model-quality-gate (see
+  ``tests/contract/test_remote_evaluation_client.py``); it is not a NotImplementedError stub. *
+  ``review_router`` : its ``platform`` adapter (``PlatformReviewRouter``) makes a real S2S call to
+  human-review-console via ``review-kit``; it raises ``RuntimeError`` when unconfigured, not the
+  scaffold's ``NotImplementedError``, so it is not a placeholder either. * ``identity`` : its
+  ``platform`` binding is the GCP IAP adapter (needs the cloud SDK), not a local-constructible
+  ``remote_*`` stub.
 
 Plus the end-to-end proof: the full recommendation pipeline runs deterministically under
 ``local`` and fails fast under ``onprem`` with **zero domain edits**, only a profile change.

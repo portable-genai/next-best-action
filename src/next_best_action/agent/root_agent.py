@@ -60,7 +60,8 @@ _ROOT_INSTRUCTION = (
     "- A recommendation is a consequential output: always state that it requires human review "
     "(maker-checker) before it is actioned, and never present a consent-suppressed offer as "
     "recommendable.\n"
-    "- Marketing outputs are governed by Mkt6 and screened by the Hrz1 guardrail (rule R7)."
+    "- Marketing outputs are governed by marketing-compliance-gate and screened by the "
+    "agent-guardrail-gateway (rule R7)."
 )
 
 

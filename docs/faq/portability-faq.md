@@ -53,7 +53,7 @@ that nonetheless satisfy every Protocol and construct with a single `Settings` a
 *interface contract* for a sovereign migration is proven and enforced by CI today. The actual
 on-prem implementations are the migration work, scoped in
 [`docs/onprem-migration.md`](../onprem-migration.md). The sovereign-DLP option behind the
-redaction port is the sibling **Rsk6** `onprem-dlp` (CPU-only, on-prem scrub).
+redaction port is the sibling `onprem-dlp` (CPU-only, on-prem scrub).
 
 ### Does residency compromise portability?
 

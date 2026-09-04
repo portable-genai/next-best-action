@@ -107,15 +107,15 @@ variable "access_policy_id" {
 }
 
 variable "enable_vpc_sc" {
-  description = "Participate in the shared Mkt5/Mkt6 VPC-SC perimeter contract. The designated owner creates it."
+  description = "Participate in the shared next-best-action, marketing-compliance-gate VPC-SC perimeter contract. The designated owner creates it."
   type        = bool
   default     = true
 }
 
 variable "manage_shared_vpc_sc_perimeter" {
   description = <<-EOT
-    Whether this module owns the one regular perimeter shared by Mkt5, Mkt6 and their Shared
-    VPC host project. Exactly one stack may own it. The governance (Mkt6) stack owns it in the
+    Whether this module owns the one regular perimeter shared by next-best-action, marketing-compliance-gate and their Shared
+    VPC host project. Exactly one stack may own it. The governance (marketing-compliance-gate) stack owns it in the
     reference topology, so this default is false; this stack still declares and validates the
     exact shared membership it expects.
   EOT
@@ -124,7 +124,7 @@ variable "manage_shared_vpc_sc_perimeter" {
 }
 
 variable "shared_vpc_sc_perimeter_name" {
-  description = "Short name of the single regular VPC-SC perimeter shared by Mkt5 and Mkt6."
+  description = "Short name of the single regular VPC-SC perimeter shared by next-best-action and marketing-compliance-gate."
   type        = string
   default     = "mkt_marketing_sg"
 
@@ -135,7 +135,7 @@ variable "shared_vpc_sc_perimeter_name" {
 }
 
 variable "mkt5_project_number" {
-  description = "Numeric project number of the Mkt5 service project; included in the shared perimeter."
+  description = "Numeric project number of the next-best-action service project; included in the shared perimeter."
   type        = string
 
   validation {
@@ -145,7 +145,7 @@ variable "mkt5_project_number" {
 }
 
 variable "mkt6_project_number" {
-  description = "Numeric project number of the Mkt6 service project; included in the shared perimeter."
+  description = "Numeric project number of the marketing-compliance-gate service project; included in the shared perimeter."
   type        = string
 
   validation {
@@ -219,7 +219,7 @@ variable "shared_vpc_subnetwork" {
 }
 
 variable "consent_store_url" {
-  description = "Reviewed HTTPS base URL of the Mkt6 consent authority. Loopback is forbidden for this managed stack."
+  description = "Reviewed HTTPS base URL of the marketing-compliance-gate consent authority. Loopback is forbidden for this managed stack."
   type        = string
 
   validation {
@@ -227,12 +227,12 @@ variable "consent_store_url" {
       "^https://[^/[:space:]]+(?::[0-9]+)?(?:/[^[:space:]]*)?$",
       var.consent_store_url
     )) && !can(regex("^https://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])", var.consent_store_url))
-    error_message = "consent_store_url must be a reviewed non-loopback HTTPS Mkt6 URL."
+    error_message = "consent_store_url must be a reviewed non-loopback HTTPS marketing-compliance-gate URL."
   }
 }
 
 variable "consent_store_audience" {
-  description = "Reviewed custom OIDC audience configured on Mkt6. It must match MKT6_S2S_AUDIENCE exactly."
+  description = "Reviewed custom OIDC audience configured on marketing-compliance-gate. It must match MKT6_S2S_AUDIENCE exactly."
   type        = string
 
   validation {

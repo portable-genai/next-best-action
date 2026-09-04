@@ -1,4 +1,4 @@
-"""Local ConsentPort: deterministic synthetic stand-in for Mkt6.
+"""Local ConsentPort: deterministic synthetic stand-in for marketing-compliance-gate.
 
 It uses the same ``consent-preference-kit`` query and decision types as the managed service.
 The fictional fixture rows remain local demo data, but the recommendation domain no longer

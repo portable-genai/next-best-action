@@ -1,4 +1,6 @@
-"""Managed consent is one OIDC-authenticated hop to Mkt6, never a second store."""
+"""Managed consent is one OIDC-authenticated hop to
+marketing-compliance-gate, never a second store.
+"""
 
 from pathlib import Path
 

@@ -1,4 +1,4 @@
-# Mkt5 next-best-action: Recommendations and Cross-Sell
+# `next-best-action` next-best-action: Recommendations and Cross-Sell
 
 **Industries:** Retail & e-commerce, Banking, Telecom, Insurance, Travel & hospitality, Media
 
@@ -6,19 +6,18 @@ A generic, multi-vertical, APAC **next-best-action** engine. Given a customer (b
 shopper (online retail) and an offer catalog, it produces a ranked, fully cited set of
 next-best-action recommendations: which offer to surface, on which channel, and why. The
 Candidate filtering, eligibility / suitability, and ranking are made by **deterministic,
-unit-tested engines**. Marketing consent is a cited decision obtained through Mkt6's versioned
+unit-tested engines**. Marketing consent is a cited decision obtained through `marketing-compliance-gate`'s versioned
 client contract, never a second store in this repo. The LLM (Gemini) only explains "why
 recommended". Built ports-and-adapters on the **Gemini Enterprise Agent
 Platform**, with a working offline `local` profile, a managed `gcp` profile (Vertex AI
 recommendations + propensity + BigQuery), and a fail-fast `onprem` profile.
 
-This is repo **Mkt5** in the marketing (`mkt`) catalog. It follows the same engineering bar as
-the reference builds (Rsk1 `compliance-advisory`, Doc1 `cdd-sow-research`, Mkt1
-`market-intelligence`) and the reusable skills in `.agents/skills/`.
+This is repo `next-best-action` in the marketing (`mkt`) catalog. It follows the same engineering bar as
+the reference builds (`compliance-advisory`, `cdd-sow-research`, `market-intelligence`) and the reusable skills in `.agents/skills/`.
 
 ## Generic, multi-vertical, APAC
 
-Mkt5 is deliberately **not** a bank-specific tool. It supports both verticals and all three
+`next-best-action` is deliberately **not** a bank-specific tool. It supports both verticals and all three
 markets as **config + seed**, never hard-coded:
 
 - **Verticals**: `banking` and `online_retail` are first-class. Eligibility means
@@ -37,8 +36,8 @@ markets as **config + seed**, never hard-coded:
    minus already-held / conflicting offers, minus out-of-stock retail offers.
 2. **EligibilityService** - per-market/vertical rule evaluation (REQUIRE / EXCLUDE /
    REQUIRE_STOCK). Records exactly which rules fired, with citations.
-3. **Mkt6 ConsentPort** - one cited decision per channel through `consent-preference-kit`.
-   Local uses fictional rows behind the same wire types; managed refuses if Mkt6 is unconfigured.
+3. **`marketing-compliance-gate` ConsentPort** - one cited decision per channel through `consent-preference-kit`.
+   Local uses fictional rows behind the same wire types; managed refuses if `marketing-compliance-gate` is unconfigured.
 4. **RankingService** - deterministic `propensity x value` score over the eligible,
    consented offers, min-max normalised, with a stable replayable order.
 
@@ -50,8 +49,8 @@ result (maker-checker: the agent proposes, a qualified operator disposes).
 
 | Profile  | What it is | Google Cloud SDK |
 | -------- | ---------- | ---------------- |
-| `local`  | A WORKING offline stack: deterministic recommendation / propensity store, fictional Mkt6 consent stand-in, SQLite FTS5 corpus, deterministic LLM. The dev/test/CI default. | none |
-| `gcp`    | Managed stack: Vertex AI recommendations + propensity + BigQuery, Mkt6 consent API, Gemini, File Search, Model Armor, Cloud Logging WORM, Cloud Trace, Gen AI eval. Lazy imports. | `[gcp]` extra |
+| `local`  | A WORKING offline stack: deterministic recommendation / propensity store, fictional `marketing-compliance-gate` consent stand-in, SQLite FTS5 corpus, deterministic LLM. The dev/test/CI default. | none |
+| `gcp`    | Managed stack: Vertex AI recommendations + propensity + BigQuery, `marketing-compliance-gate` consent API, Gemini, File Search, Model Armor, Cloud Logging WORM, Cloud Trace, Gen AI eval. Lazy imports. | `[gcp]` extra |
 | `onprem` | Fail-fast `NotImplementedError` placeholders satisfying the same Protocols (exit-portability proof). | none |
 
 Switching profiles is a one-line change of `MKT_NBA_PROFILE` (or `profile:` in
@@ -127,6 +126,6 @@ See `DEMO.md` for the local (offline) and GCP demos (region + vertical selectabl
 
 `consent-preference-kit` is a public, commit-locked catalog common, so source installation and
 the image build need no credential at all: the `git+https` line in the lockfile resolves
-anonymously. Runtime Mkt6 authentication is separate and unchanged: managed profiles mint an
+anonymously. Runtime `marketing-compliance-gate` authentication is separate and unchanged: managed profiles mint an
 audience-bound Google ID token through Workload Identity; non-GCP/local consumers may use the
 kit's `CONSENT_S2S_*` credentials.

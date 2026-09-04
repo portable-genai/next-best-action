@@ -1,4 +1,4 @@
-# Spec - Mkt5 Next-Best-Action: Recommendations and Cross-Sell
+# Spec - `next-best-action` Next-Best-Action: Recommendations and Cross-Sell
 
 ## Purpose
 
@@ -37,14 +37,14 @@ and why. The consequential decisions are deterministic and auditable; the LLM on
 | Port | Responsibility | Primary GCP adapter |
 | ---- | -------------- | ------------------- |
 | `RecommendationPort` | customer profile, offer catalog, eligibility rules, propensity signals | Vertex AI recommendations + propensity + BigQuery |
-| `ConsentPort` | cited marketing permission from the single Mkt6 system of record | Mkt6 over `consent-preference-kit` |
+| `ConsentPort` | cited marketing permission from the single `marketing-compliance-gate` system of record | `marketing-compliance-gate` over `consent-preference-kit` |
 | `KnowledgeBasePort` | offer / policy corpus retrieval | File Search / Agent Search |
 | `LlmPort` | "why recommended" explanation (narration only) | Gemini |
-| `GuardrailPort` | input/output screening (Hrz1) | Model Armor |
-| `AuditSinkPort` | immutable WORM audit (Hrz5) | Cloud Logging locked bucket |
-| `ObservabilityTracerPort` | reasoning-loop traces + token metrics (Hrz5) | Cloud Trace / OTel |
-| `EvaluationGatePort` | Hrz4 promotion gate | Gen AI evaluation service |
-| `AgentRegistryPort` | A2A AgentCard registry (Hrz3) | A2A registry |
+| `GuardrailPort` | input/output screening (`agent-guardrail-gateway`) | Model Armor |
+| `AuditSinkPort` | immutable WORM audit (`agent-observability`) | Cloud Logging locked bucket |
+| `ObservabilityTracerPort` | reasoning-loop traces + token metrics (`agent-observability`) | Cloud Trace / OTel |
+| `EvaluationGatePort` | `model-quality-gate` promotion gate | Gen AI evaluation service |
+| `AgentRegistryPort` | A2A AgentCard registry (`agent-registry`) | A2A registry |
 | `ToolCatalogPort` | governed MCP tool catalog | MCP 2026-07-28 |
 
 ## Pipeline (RecommendationService.recommend)
@@ -53,7 +53,7 @@ and why. The consequential decisions are deterministic and auditable; the LLM on
 2. `recommendations.customer(...)` + `recommendations.catalog(...)`.
 3. `CandidateFilterService.filter(...)` - empty candidate set is a hard error.
 4. `EligibilityService.evaluate_all(...)` against per-market/vertical rules.
-5. `ConsentPort.decide(...)` against Mkt6 for each selected channel; unavailable is a refusal.
+5. `ConsentPort.decide(...)` against `marketing-compliance-gate` for each selected channel; unavailable is a refusal.
 6. `recommendations.propensity(...)` (degrades to value-only ranking if unavailable).
 7. `RankingService.rank(...)` over the eligible AND consented offers.
 8. `llm.generate(...)` per recommendation - explanation only.
@@ -68,17 +68,17 @@ and why. The consequential decisions are deterministic and auditable; the LLM on
 - The result always sets `requires_human_review=True` (maker-checker).
 - The pipeline is deterministic under the local profile (same inputs -> same output).
 
-## Quality gate (Hrz4 thresholds)
+## Quality gate (`model-quality-gate` thresholds)
 
 - `recommendation_groundedness >= 0.80`
 - `citation_accuracy >= 0.90`
 - `eligibility_accuracy >= 0.90`
 - `review_safety >= 0.99`
 
-Under the `platform` profile the promotion gate is a real HTTP client to Hrz4
+Under the `platform` profile the promotion gate is a real HTTP client to `model-quality-gate`
 (`RemoteEvaluationAdapter`), not a stub: `POST /v1/evaluations` and `POST /v1/gate` with a
 structured target (`{model, prompt_version, dataset_id, system}`) and a server-side metric
-bundle named `mkt5-nba`. The adapter never sends a metric list; naming the bundle lets Hrz4
+bundle named `mkt5-nba`. The adapter never sends a metric list; naming the bundle lets `model-quality-gate`
 own the metric set and the thresholds above, so model-risk policy stays on the platform rather
 than duplicated per consumer. The `gcp` profile uses the Gen AI evaluation service; `local`
 runs the in-repo eval (`eval/run_eval.py`).

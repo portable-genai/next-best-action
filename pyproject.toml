@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "next-best-action"
 version = "0.0.1"
-description = "D5 Next-Best-Action: Recommendations and Cross-Sell — deterministic candidate filtering, eligibility/suitability, marketing-consent and ranking turn a customer or shopper and an offer catalog into cited, human-reviewed next-best-action recommendations, generic across banking and online retail and the JP/AU/SG markets, built ports-and-adapters on the Gemini Enterprise Agent Platform."
+description = "Next-Best-Action: Recommendations and Cross-Sell — deterministic candidate filtering, eligibility/suitability, marketing-consent and ranking turn a customer or shopper and an offer catalog into cited, human-reviewed next-best-action recommendations, generic across banking and online retail and the JP/AU/SG markets, built ports-and-adapters on the Gemini Enterprise Agent Platform."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
@@ -17,7 +17,7 @@ keywords = ["next-best-action", "recommendations", "cross-sell", "propensity", "
 dependencies = [
   # Shared commons, pinned by tag; no build-time coupling. Public repos, so CI
   # installs them with zero credentials. hex-service-kit: outbound S2S, fail-closed net defaults,
-  # StrEnum base, to_jsonable, hash-chained WORM audit. agent-eval-kit: the Hrz4
+  # StrEnum base, to_jsonable, hash-chained WORM audit. agent-eval-kit: the model-quality-gate
   # promotion-gate client the platform eval adapter uses.
   "hex-service-kit @ git+https://github.com/portable-genai/hex-service-kit@v0.0.6",
   "agent-eval-kit @ git+https://github.com/portable-genai/agent-eval-kit@v0.0.1",
@@ -35,11 +35,11 @@ dependencies = [
   # a pack fix is a version bump instead of a copy that drifts (retires the C4 regex copy).
   "pii-kit @ git+https://github.com/portable-genai/pii-kit@v0.0.1",
   # review-kit: the producer half of rule R8 (route a requires_human_review escalation to
-  # the Hrz7 Human-Review & Maker-Checker Console). The Review/Citation primitives, the S2S
+  # the human-review-console Human-Review & Maker-Checker Console). The Review/Citation primitives, the S2S
   # submission client and the transactional outbox, shared so every producer routes reviews the
   # same way. Pure stdlib (urllib), zero deps, public. Pinned by tag.
   "review-kit @ git+https://github.com/portable-genai/review-kit@v0.0.1",
-  # Versioned client contract for Mkt6, the catalog's one consent and preference store.
+  # Versioned client contract for marketing-compliance-gate, the catalog's one consent and preference store.
   # The core asks through a port on every candidate; local supplies a synthetic adapter and
   # managed profiles call the real service. Private today, so CI needs read-only credentials.
   "consent-preference-kit @ git+https://github.com/portable-genai/consent-preference-kit@v0.0.1",

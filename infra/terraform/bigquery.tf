@@ -9,15 +9,15 @@
 #               is redacted at the boundary before any text reaches a model or the audit log.
 #
 # This dataset backs the RecommendationPort (VertexRecommendationAdapter): the offer,
-# eligibility and propensity feature store. Consent is owned only by Mkt6 and is never stored
-# in this Mkt5 dataset. The dataset id matches
+# eligibility and propensity feature store. Consent is owned only by marketing-compliance-gate and is never stored
+# in this next-best-action dataset. The dataset id matches
 # config/settings.yaml recommendation.bigquery_dataset (mkt_nba).
 
 resource "google_bigquery_dataset" "nba_features" {
   dataset_id  = "mkt_nba" # matches settings.yaml recommendation.bigquery_dataset
   project     = var.project_id
   location    = var.region # the selected region (residency)
-  description = "Mkt5 next-best-action feature store (customer + offer + propensity, CMEK)."
+  description = "next-best-action next-best-action feature store (customer + offer + propensity, CMEK)."
 
   default_encryption_configuration {
     kms_key_name = google_kms_crypto_key.nba.id # CMEK does not cascade

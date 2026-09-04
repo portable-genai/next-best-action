@@ -1,7 +1,7 @@
-# Runbook: Mkt5 Next-Best-Action Recommendations and Cross-Sell Engine
+# Runbook: `next-best-action` Next-Best-Action Recommendations and Cross-Sell Engine
 
-Operational notes for deploying and running Mkt5 on the Gemini Enterprise Agent Platform in a
-residency region (defaults `asia-southeast1`; JP and AU are per-market overrides). Mkt5 is the
+Operational notes for deploying and running `next-best-action` on the Gemini Enterprise Agent Platform in a
+residency region (defaults `asia-southeast1`; JP and AU are per-market overrides). `next-best-action` is the
 only per-customer marketing repo, so the PII, tenancy and consent controls below are
 load-bearing. This is a reference build; adapt it to your own change-management and model-risk
 sign-off before any live use.
@@ -16,7 +16,7 @@ profile deliberately. An unknown or mis-capitalised value (`Local`, `GCP`) is re
 rather than silently selecting neither the relaxations nor the restrictions.
 
 - `local` (SDK-free): the whole pipeline runs offline (deterministic recommender and LLM,
-  in-memory customers / offers, fictional Mkt6 consent stand-in using canonical wire types).
+  in-memory customers / offers, fictional `marketing-compliance-gate` consent stand-in using canonical wire types).
   No Google Cloud SDK. This is what CI and the demo run.
 - `gcp`: the managed stack (Vertex recommendations, BigQuery features, Cloud DLP, Model Armor,
   Cloud Logging).
@@ -49,11 +49,11 @@ outside the caller's tenant is denied with 403 (never 200 or 404).
 ## 2. Deploy (managed stack)
 
 The network platform must first associate both service projects with the existing Shared VPC
-host and provide a `/26` or larger Singapore subnet with Private Google Access. Apply Mkt6
-before Mkt5: Mkt6 owns the single regular VPC-SC perimeter and supplies the `service_url` and
+host and provide a `/26` or larger Singapore subnet with Private Google Access. Apply `marketing-compliance-gate`
+before `next-best-action`: `marketing-compliance-gate` owns the single regular VPC-SC perimeter and supplies the `service_url` and
 `s2s_audience` values used below. Keep this repo's
-`manage_shared_vpc_sc_perimeter = false`; the host, Mkt5 and Mkt6 numeric project numbers and
-the perimeter name must exactly match Mkt6's inputs.
+`manage_shared_vpc_sc_perimeter = false`; the host, `next-best-action` and `marketing-compliance-gate` numeric project numbers and
+the perimeter name must exactly match `marketing-compliance-gate`'s inputs.
 
 ```bash
 # 1. Provision infra (review the plan; the WORM bucket lock is irreversible when
@@ -85,8 +85,8 @@ false` and the audit bucket `locked = false` so everything stays deletable (not 
 production, and never with real customer data). See `infra/terraform/terraform.tfvars.example`
 and `infra/terraform/README.md`.
 
-The managed consent route uses Mkt5 Direct VPC egress with `ALL_TRAFFIC`, the Mkt6 default
-`run.app` URL, and Mkt6's fixed internal-only ingress. Do not switch to private-ranges-only or
+The managed consent route uses `next-best-action` Direct VPC egress with `ALL_TRAFFIC`, the `marketing-compliance-gate` default
+`run.app` URL, and `marketing-compliance-gate`'s fixed internal-only ingress. Do not switch to private-ranges-only or
 an internet-facing custom domain: the former bypasses the VPC for `run.app`, and the latter is
 correctly rejected. OIDC audience/caller verification and Cloud Run invoker IAM remain
 mandatory even on the internal network.
@@ -135,7 +135,7 @@ remains intact.
 | HTTP 403 on recommend | Cross-tenant object reference (customer not in the principal's tenant) | Expected fail-closed behaviour; use an entitled identity |
 | `UnknownCustomerError` (HTTP 404) | No such customer in the source | Confirm the `customer_id`, market and vertical |
 | `NoCandidatesError` (HTTP 404) | No eligible, consented offers for the customer | Expected when everything is held / consent-suppressed; check consent and eligibility |
-| Every candidate is consent-suppressed | Mkt6 URL, OIDC audience/caller policy, or decision is unavailable | Check `MKT_CONSENT_STORE_URL`, `MKT_CONSENT_STORE_AUDIENCE`, Mkt6's caller allowlist and Cloud Run invoker grant; do not add a local production fallback |
+| Every candidate is consent-suppressed | `marketing-compliance-gate` URL, OIDC audience/caller policy, or decision is unavailable | Check `MKT_CONSENT_STORE_URL`, `MKT_CONSENT_STORE_AUDIENCE`, `marketing-compliance-gate`'s caller allowlist and Cloud Run invoker grant; do not add a local production fallback |
 | Guardrail block on a benign request (HTTP 400) | Model Armor template too strict | Tune the `model_armor` template filter confidence levels |
-| Mkt6 returns an ingress 404/403 before app verification | Mkt5 did not route the `run.app` request through the Shared VPC | Confirm both projects are associated to the same host, the subnet has Private Google Access, and Mkt5 Direct VPC egress is `ALL_TRAFFIC` |
-| VPC-SC denies the apply or consent hop | Projects are in distinct perimeters, the Shared VPC host is absent, or the runner is outside the perimeter | Confirm Mkt6 solely owns one dry-run perimeter containing host + Mkt5 + Mkt6; review dry-run denials before the owner enforces it |
+| `marketing-compliance-gate` returns an ingress 404/403 before app verification | `next-best-action` did not route the `run.app` request through the Shared VPC | Confirm both projects are associated to the same host, the subnet has Private Google Access, and `next-best-action` Direct VPC egress is `ALL_TRAFFIC` |
+| VPC-SC denies the apply or consent hop | Projects are in distinct perimeters, the Shared VPC host is absent, or the runner is outside the perimeter | Confirm `marketing-compliance-gate` solely owns one dry-run perimeter containing host + `next-best-action` + `marketing-compliance-gate`; review dry-run denials before the owner enforces it |

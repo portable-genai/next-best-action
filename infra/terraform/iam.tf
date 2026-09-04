@@ -10,7 +10,7 @@
 
 resource "google_service_account" "runtime" {
   account_id   = "mkt-nba-run"
-  display_name = "Mkt5 Next-Best-Action : Cloud Run runtime"
+  display_name = "next-best-action Next-Best-Action : Cloud Run runtime"
   project      = var.project_id
 
   depends_on = [google_project_service.required]

@@ -29,7 +29,7 @@ The domain is split so the boundary is explicit:
 If your product is another per-customer recommendation surface (banking cross-sell, retail
 affinity, telecom upsell, insurance next-best-offer), the core plus three deterministic engines
 (candidate filtering, eligibility / suitability, ranking) transfer directly. Consent remains an
-external legal decision behind `ConsentPort`; bind Mkt6 or the client's preference centre rather
+external legal decision behind `ConsentPort`; bind `marketing-compliance-gate` or the client's preference centre rather
 than adding consent rows to the recommendation store.
 
 ## 2. Core-vs-adopter-owned files (so upstream merges stay mechanical)
@@ -92,7 +92,7 @@ NOT touch the human decisions below.
    rather than silently reducing redaction to email and phone.
 4. **Ranking and consent boundary.** Own the numbers under `ranking:` in
    `config/settings.yaml` (`propensity_weight`, `value_weight`, `min_score`). Set
-   `MKT_CONSENT_STORE_URL` plus the reviewed `MKT_CONSENT_STORE_AUDIENCE` for Mkt6 Workload
+   `MKT_CONSENT_STORE_URL` plus the reviewed `MKT_CONSENT_STORE_AUDIENCE` for `marketing-compliance-gate` Workload
    Identity, or implement the on-prem adapter
    against the client's preference centre. Only the exact canonical allow outcome may permit.
 5. **Reference data is fictional.** Every seeded customer, offer, eligibility rule, consent
@@ -111,10 +111,10 @@ NOT touch the human decisions below.
 This repo is one system in a catalog of composable GRC systems. Several concerns it
 *touches* are owned by sibling platform services, and you should integrate rather than
 rebuild them (see [`docs/faq/features-faq.md`](faq/features-faq.md) for the full map): the
-guardrail gateway (Hrz1), the governed knowledge base (Hrz2), the agent registry (Hrz3),
-the AI-quality / eval gate (Hrz4), observability + WORM audit (Hrz5), the human-review and
-maker-checker console (Hrz7), the marketing-compliance governor (Mkt6), and the on-prem DLP
-gate (Rsk6). The `platform` profile's adapters are already thin HTTP clients to those
+guardrail gateway (`agent-guardrail-gateway`), the governed knowledge base (`enterprise-knowledge-base`), the agent registry (`agent-registry`),
+the AI-quality / eval gate (`model-quality-gate`), observability + WORM audit (`agent-observability`), the human-review and
+maker-checker console (`human-review-console`), the marketing-compliance governor (`marketing-compliance-gate`), and the on-prem DLP
+gate (`onprem-dlp`). The `platform` profile's adapters are already thin HTTP clients to those
 services.
 
 ## 6. Adoption checklist
@@ -123,7 +123,7 @@ services.
 - [ ] Set market + Terraform tfvars to your in-country region.
 - [ ] Wired your IdP / IAP audience for the secure profiles.
 - [ ] Set `pii.jurisdictions` + added a pattern pack if needed; `pii_safety` exercises your ids.
-- [ ] Owned the `ranking:` numbers and bound Mkt6 or the client's preference centre.
+- [ ] Owned the `ranking:` numbers and bound `marketing-compliance-gate` or the client's preference centre.
 - [ ] Replaced the local seed and every synthetic fixture with your own catalog.
 - [ ] Rebuilt the eval golden set + rubrics for your offers.
 - [ ] Reviewed the deploy posture (Dockerfile, Terraform, bind address).

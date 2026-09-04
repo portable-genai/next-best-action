@@ -59,7 +59,7 @@ resource "google_monitoring_alert_policy" "security" {
   for_each = local.security_metrics
 
   project      = var.project_id
-  display_name = "Mkt5 security: ${each.key}"
+  display_name = "next-best-action security: ${each.key}"
   combiner     = "OR"
 
   conditions {
@@ -86,7 +86,7 @@ resource "google_monitoring_alert_policy" "security" {
   notification_channels = var.alert_notification_channels
 
   documentation {
-    content   = "Security signal '${each.key}' fired for the Mkt5 next-best-action agent. Investigate the matching entries in Cloud Logging and the WORM audit bucket."
+    content   = "Security signal '${each.key}' fired for the next-best-action next-best-action agent. Investigate the matching entries in Cloud Logging and the WORM audit bucket."
     mime_type = "text/markdown"
   }
 

@@ -1,4 +1,4 @@
-# apis.tf : Enable exactly the managed services Mkt5 depends on (SPEC.md Ports table).
+# apis.tf : Enable exactly the managed services next-best-action depends on (SPEC.md Ports table).
 #
 # Principle map:
 #   Managed-first / minimal surface : only the services the pinned gcp profile actually

@@ -1,6 +1,6 @@
 # On-prem migration (exit / portability): General Principle P-12
 
-The whole point of the ports-and-adapters shape is that Mkt5's exit story is **demonstrable,
+The whole point of the ports-and-adapters shape is that `next-best-action`'s exit story is **demonstrable,
 not aspirational**. Switching from the managed GCP stack to a sovereign / on-premise stack is a
 one-line profile change (`MKT_NBA_PROFILE=onprem`) plus filling in the adapter bodies. The
 domain core, the services, the API, the CLI and the agent wiring do not change.
@@ -22,7 +22,7 @@ proves the `local` family is a WORKING offline stack implementing the same inter
 
 ## The migration checklist
 
-To run Mkt5 on a sovereign / on-premise platform, implement these adapter bodies (the only
+To run `next-best-action` on a sovereign / on-premise platform, implement these adapter bodies (the only
 files that change):
 
 | Port | On-prem file | What to implement |
