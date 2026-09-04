@@ -1,4 +1,4 @@
-"""ConsentPort: the boundary onto Mkt6, the catalog's consent system of record.
+"""ConsentPort: the boundary onto marketing-compliance-gate, the catalog's consent system of record.
 
 The versioned wire types come from ``consent-preference-kit``. The recommendation domain asks
 this port instead of reading consent rows from its own recommendation store, so local, managed,

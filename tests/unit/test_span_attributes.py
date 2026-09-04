@@ -35,7 +35,7 @@ from next_best_action.domain.models import (
 CUSTOMER_ID = "cust-sg-bank-1"
 PLANTED_NRIC = "S1234567A"
 
-#: The complete attribute key set an Mkt5 span may carry, per span name. Widening one of
+#: The complete attribute key set an next-best-action span may carry, per span name. Widening one of
 #: these is a decision about what leaves the trust boundary, so it is made here rather
 #: than at a call site.
 _ALLOWED = {

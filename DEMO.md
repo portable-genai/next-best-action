@@ -1,10 +1,10 @@
-# Demo - Mkt5 Next-Best-Action: Recommendations and Cross-Sell
+# Demo - `next-best-action` Next-Best-Action: Recommendations and Cross-Sell
 
 Two demos: a fully **offline local demo** (no Google Cloud, deterministic, repeatable) and a
 **GCP demo** on the managed stack. Both are region- and vertical-selectable.
 
 The story to tell: candidate filtering, eligibility / suitability, and ranking are made by
-**deterministic engines** an auditor can re-run. Consent is a deterministic, cited Mkt6 decision
+**deterministic engines** an auditor can re-run. Consent is a deterministic, cited `marketing-compliance-gate` decision
 consumed through the same versioned contract in both deployment shapes: a fictional local
 stand-in offline and the real service on GCP. The LLM only writes the "why recommended"
 explanation; nothing auto-executes (every result is maker-checker gated).
@@ -77,7 +77,7 @@ Unattended (self-test / recording): `HEADLESS=1 DEMO_AUTO=1 .venv/bin/python scr
 ### E. The API + the thin console
 
 ```bash
-# Terminal 1 - the real FastAPI service on the Mkt5 port:
+# Terminal 1 - the real FastAPI service on the `next-best-action` port:
 MKT_NBA_PROFILE=local uvicorn next_best_action.api.app:app --port 8104
 
 # Terminal 2 - the Next.js console, on a PRODUCTION build:
@@ -90,7 +90,7 @@ port terminal 1 binds. Demo the built console, never `make run-ui`: that target 
 developer loop and serves `next dev`, and the standing rule for every demo in the fleet is
 `org-metadata/docs/demos/demo-inventory.md`: production builds only.
 
-### F. The eval gate (Hrz4)
+### F. The eval gate (`model-quality-gate`)
 
 ```bash
 MKT_NBA_PROFILE=local python eval/run_eval.py    # exit 0 when every metric clears threshold

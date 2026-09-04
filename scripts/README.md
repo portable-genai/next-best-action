@@ -1,4 +1,4 @@
-# Demo scripts - Mkt5 Next-Best-Action: Recommendations and Cross-Sell
+# Demo scripts - `next-best-action` Next-Best-Action: Recommendations and Cross-Sell
 
 All scripts are SDK-free and run against the in-process `local` stack (no Google Cloud, no
 API key). They drive the real `RecommendationService` over six synthetic customers spanning

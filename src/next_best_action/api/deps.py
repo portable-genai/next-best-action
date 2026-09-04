@@ -39,6 +39,7 @@ def make_recommendation_service(container: Container | None = None) -> Recommend
             value_weight=ranking_cfg.value_weight,
             min_score=ranking_cfg.min_score,
         ),
-        # Rule R8: route a requires_human_review set to the Hrz7 maker-checker console.
+        # Rule R8: route a requires_human_review set to the human-review-console maker-checker
+        # console.
         review_router=container.review_router,
     )

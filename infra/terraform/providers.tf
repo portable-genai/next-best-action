@@ -1,4 +1,4 @@
-# providers.tf : Provider pinning for the Mkt5 Next-Best-Action sovereign deploy.
+# providers.tf : Provider pinning for the next-best-action Next-Best-Action sovereign deploy.
 #
 # Principle map (SPEC.md invariants + README residency posture):
 #   Residency : every provider call is pinned to var.region (the allow-listed selection).

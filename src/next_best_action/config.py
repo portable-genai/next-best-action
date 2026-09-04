@@ -405,8 +405,12 @@ class Settings:
     profile: str = "local"  # local | gcp | platform | onprem; see resolve_profile for "unset"
     vertical: str = "banking"  # banking | online_retail (the active vertical)
     market: str = "SG"  # JP | AU | SG (the active market)
-    consent_url: str = ""  # Mkt6 consent and preference store; required on managed profiles
-    consent_audience: str = ""  # Mkt6 custom OIDC audience; required for gcp Workload Identity
+    consent_url: str = (
+        ""  # marketing-compliance-gate consent and preference store; required on managed profiles
+    )
+    consent_audience: str = (
+        ""  # marketing-compliance-gate custom OIDC audience; required for gcp Workload Identity
+    )
     models: ModelSettings = field(default_factory=ModelSettings)
     recommendation: RecommendationSettings = field(default_factory=RecommendationSettings)
     knowledge_base: KnowledgeBaseSettings = field(default_factory=KnowledgeBaseSettings)

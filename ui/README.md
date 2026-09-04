@@ -1,7 +1,7 @@
-# Mkt5 Next-Best-Action: Demo UI
+# `next-best-action` Next-Best-Action: Demo UI
 
-A thin demo console for **Mkt5**, the Next-Best-Action: Recommendations and Cross-Sell system.
-It is a thin presentation layer over the Mkt5 FastAPI backend: it ranks the next-best-action
+A thin demo console for `next-best-action`, the Next-Best-Action: Recommendations and Cross-Sell system.
+It is a thin presentation layer over the `next-best-action` FastAPI backend: it ranks the next-best-action
 for a customer (banking) or shopper (online retail) in a chosen market and vertical, and
 renders the audit-first result (the ranked, cited recommendations with propensity / value
 score bars and the LLM "why recommended" explanation, plus the offers suppressed for
@@ -22,7 +22,7 @@ market and vertical.
 ## Configure the backend
 
 Nothing to configure to run against `make run-api`: `NEXT_PUBLIC_API_BASE` already
-defaults to the Mkt5 API port 8104. Write the override yourself only when the API is
+defaults to the `next-best-action` API port 8104. Write the override yourself only when the API is
 somewhere else, and write it before `npm run build`, because Next inlines every
 `NEXT_PUBLIC_*` value at build time:
 
@@ -33,7 +33,7 @@ echo 'NEXT_PUBLIC_API_BASE=https://api.elsewhere.example' > .env.local
 ## Run
 
 ```bash
-# 1. start the Mkt5 API (from the repo root)
+# 1. start the `next-best-action` API (from the repo root)
 MKT_NBA_PROFILE=local uvicorn next_best_action.api.app:app --port 8104
 
 # 2. start the console
@@ -48,7 +48,7 @@ Then open http://localhost:3000.
 |------|--------------|
 | `app/` | The App Router pages. `layout.tsx` sets `export const dynamic = "force-dynamic"`, which the nonce CSP requires (see below). |
 | `components/` | The audit-first result view: ranked cited recommendations, suppressed offers, the review banner. |
-| `lib/api.ts`, `lib/types.ts` | The typed client for the Mkt5 API and the shapes it returns. |
+| `lib/api.ts`, `lib/types.ts` | The typed client for the `next-best-action` API and the shapes it returns. |
 | `lib/csp.mjs` | The Content-Security-Policy, built ONCE. Also `frameAncestors` (three-state, mirroring the backend), `generateNonce` and the build-time `assertHydratableCsp` refusal. |
 | `proxy.ts` | The only emitter of the CSP. Mints a per-request nonce and sets the policy on both the request headers (where Next reads the nonce it stamps) and the response headers (what the browser enforces). |
 | `next.config.mjs` | Base path, and the static-only headers (`nosniff`, `Referrer-Policy`). Emits NO CSP: two layers emitting one would be intersected by the browser and the stricter value would win per directive. |

@@ -1,8 +1,9 @@
 """BigQuery and Vertex AI implementation of the raw recommendation-input port.
 
 The adapter retrieves facts and model signals only. Eligibility and ranking stay in the
-deterministic domain services; consent comes from the separate Mkt6-backed port. The result is
-replayable outside GCP with local adapters. SDK imports remain lazy for SDK-free profiles.
+deterministic domain services; consent comes from the separate marketing-compliance-gate-backed
+port. The result is replayable outside GCP with local adapters. SDK imports remain lazy for SDK-free
+profiles.
 """
 
 from __future__ import annotations

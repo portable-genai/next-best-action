@@ -1,11 +1,11 @@
 """RecommendationService — the next-best-action orchestrator.
 
-Owns the full recommendation pipeline and calls only ports plus deterministic engines.
-Candidate filtering, eligibility and ranking stay pure and replayable here. Marketing consent
-is obtained through Mkt6's versioned decision contract, so this repo does not maintain a second
-legal decision store. The LLM only explains "why recommended" over the already-fixed ranking.
-Every consequential output is maker-checker gated: the recommendation set always requires
-human review.
+Owns the full recommendation pipeline and calls only ports plus deterministic engines. Candidate
+filtering, eligibility and ranking stay pure and replayable here. Marketing consent is obtained
+through marketing-compliance-gate's versioned decision contract, so this repo does not maintain a
+second legal decision store. The LLM only explains "why recommended" over the already-fixed ranking.
+Every consequential output is maker-checker gated: the recommendation set always requires human
+review.
 
 Pipeline (each step wrapped in ``tracer.span``; audited at the end):
 
@@ -16,7 +16,8 @@ Pipeline (each step wrapped in ``tracer.span``; audited at the end):
       -> recommendations.catalog(market, vertical)   (the offer catalog)
       -> candidate_filter.filter(customer, catalog)  [empty -> NoCandidatesError]
       -> eligibility.evaluate_all(customer, candidates, rules)   (suitability/availability)
-      -> consent.decide(candidate channel) through Mkt6          (marketing consent)
+      -> consent.decide(candidate channel) through marketing-compliance-gate          (marketing
+      consent)
       -> recommendations.propensity(customer, candidates)        (Vertex propensity)
       -> ranking.rank(eligible & consented offers)               (deterministic score)
       -> llm.generate("why recommended") per top recommendation  (explanation only)
@@ -117,7 +118,8 @@ class RecommendationService:
         self._eligibility = eligibility or EligibilityService()
         self._consent = consent
         self._ranking = ranking or RankingService()
-        # Rule R8: when the set requires human review it is routed to Hrz7 (the maker-checker
+        # Rule R8: when the set requires human review it is routed to human-review-console (the
+        # maker-checker
         # console), not left as a boolean. Optional so the CLI and unit tests can omit it; when
         # unset the escalation still audits ESCALATED, it just is not forwarded to a console.
         self._review_router = review_router
@@ -177,7 +179,8 @@ class RecommendationService:
             )
             summary = self._summarise(request, recs, suppressed, consent_suppressed)
             # Consent is consequential even when it suppresses every offer. Keep the exact
-            # Mkt6 decision IDs in the aggregate evidence so the durable audit can reconcile
+            # marketing-compliance-gate decision IDs in the aggregate evidence so the durable audit
+            # can reconcile
             # a refusal/outage, rather than recording only successful recommendation evidence.
             citations = merge_citations(
                 tuple(c for r in recs for c in r.citations)
@@ -203,7 +206,8 @@ class RecommendationService:
             self._guard(summary, Direction.OUTPUT, request, principal)
             self._record(result, request, principal, customer)
 
-            # Rule R8: route the escalation to Hrz7 (the maker-checker console) rather than
+            # Rule R8: route the escalation to human-review-console (the maker-checker console)
+            # rather than
             # terminating it in a boolean. The verified principal's tenant is threaded through
             # (never a client-asserted one) so the routed review is partitioned to the tenant
             # that owns the set; the adapter redacts per-customer PII before the wire. Best-
@@ -259,7 +263,8 @@ class RecommendationService:
         request: RecommendationRequest,
         principal: Principal,
     ) -> tuple[ConsentDecision, ...]:
-        """Ask Mkt6 once per selected channel and map its wire answer into output evidence.
+        """Ask marketing-compliance-gate once per selected channel and map its wire answer into
+        output evidence.
 
         Calls are cached by channel within one recommendation request. Any inability to obtain a
         decision is represented as a cited refusal, never as permission and never as a private
@@ -334,7 +339,7 @@ class RecommendationService:
                 Citation(
                     source_id=answer.id,
                     source_type=SourceType.CONSENT,
-                    title="Mkt6 consent and preference decision",
+                    title="marketing-compliance-gate consent and preference decision",
                     snippet=(
                         f"as_of={answer.as_of or 'server-now'}; outcome={answer.outcome}"
                         f"{record_detail}"
@@ -359,7 +364,8 @@ class RecommendationService:
                     allowed=permitted,
                     channel=channel,
                     reason=(
-                        f"Mkt6 consent {answer.outcome or 'unknown'} on {channel.value}: {reasons}"
+                        f"marketing-compliance-gate consent {answer.outcome or 'unknown'} on "
+                        f"{channel.value}: {reasons}"
                     ),
                     citation=citation,
                     decision_id=answer.id,

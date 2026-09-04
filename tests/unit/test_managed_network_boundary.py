@@ -1,4 +1,6 @@
-"""Static contracts for the managed Mkt5 -> Mkt6 network and perimeter path."""
+"""Static contracts for the managed next-best-action -> marketing-compliance-gate network and
+perimeter path.
+"""
 
 from pathlib import Path
 

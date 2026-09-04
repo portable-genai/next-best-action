@@ -5,13 +5,13 @@ deterministic vs LLM, and where its responsibilities **stop** and a sibling cata
 takes over. Cross-references: [`README.md`](../../README.md), [`DEMO.md`](../../DEMO.md),
 [`SPEC.md`](../../SPEC.md).
 
-### What does Mkt5 actually produce?
+### What does `next-best-action` actually produce?
 
 A ranked, fully cited **RecommendationSet** for one customer (banking) or shopper (online
 retail): which offer to surface, on which channel, and why. From the customer, the offer
 catalog and the propensity signals it produces an ordered list of eligible, consented
 offers, each recommendation carrying its evidence as `Citation`s (the offer, the propensity
-signal, the Mkt6 consent decision, the eligibility rules that fired) and a short "why recommended"
+signal, the `marketing-compliance-gate` consent decision, the eligibility rules that fired) and a short "why recommended"
 explanation, with a WORM audit event for the whole interaction. It is generic and APAC: the
 active `vertical` (banking / online_retail) and `market` (JP / AU / SG) are settings, not
 branches.
@@ -20,7 +20,7 @@ branches.
 
 The consequential decisions are **deterministic and replayable** (pure stdlib,
 unit-tested): candidate filtering (`candidate_service.py`), eligibility / suitability
-(`eligibility_service.py`), and the `propensity x value` ranking (`ranking_service.py`). Mkt6's
+(`eligibility_service.py`), and the `propensity x value` ranking (`ranking_service.py`). `marketing-compliance-gate`'s
 consent decision is deterministic and cited but remains behind `ConsentPort`, so it is not
 reimplemented here. The LLM only **explains** the
 already-fixed ranking; it never chooses, scores, or reorders offers. An auditor can recompute
@@ -36,7 +36,7 @@ the customer has not consented to on that channel.
 
 ### How does consent work?
 
-Mkt5 asks the Mkt6 consent and preference store for every candidate channel through the pinned
+`next-best-action` asks the `marketing-compliance-gate` consent and preference store for every candidate channel through the pinned
 `consent-preference-kit` contract. An absent, malformed, or unavailable answer suppresses the
 offer; there is no BigQuery consent fallback. Local uses fictional consent rows behind the same
 port and wire types, so the offline demo exercises the real boundary without a network call.
@@ -48,28 +48,28 @@ next-best-action domain logic and its cited outputs. It **integrates** (via the 
 profile's HTTP adapters) several cross-cutting concerns owned by sibling platform systems, do
 not rebuild these in a fork:
 
-| Concern | Owned by (catalog id / repo) | Mkt5's role |
+| Concern | Owned by (catalog id / repo) | `next-best-action`'s role |
 |---|---|---|
-| Runtime guardrail: PII redaction, prompt-injection / jailbreak defense | **Hrz1** `agent-guardrail-gateway` | consumes it on every recommendation (input + output screen) |
-| Governed RAG / offer + policy knowledge base with citations | **Hrz2** `enterprise-knowledge-base` | retrieves grounded offer / policy context from it |
-| Agent registry, versioning, identity, entitlements | **Hrz3** `agent-registry` | publishes its A2A AgentCard for discovery |
-| AI-quality / eval / model-risk promotion gate | **Hrz4** `model-quality-gate` | its eval metrics gate promotion; the offline gate mirrors it |
-| Observability + immutable WORM prompt/response audit | **Hrz5** `agent-observability` | writes audit events to it; traces spans through it |
-| Human-review / maker-checker console | **Hrz7** `human-review-console` | routes every escalated recommendation to it (rule R8) |
-| Financial-promotions / marketing-compliance governance | **Mkt6** `marketing-compliance-gate` | asks its consent service through the versioned client contract on every customer-facing candidate (rule R7) |
-| On-prem, CPU-only DLP scrub before egress | **Rsk6** `onprem-dlp` | the sovereign-DLP option behind the redaction port |
+| Runtime guardrail: PII redaction, prompt-injection / jailbreak defense | `agent-guardrail-gateway` | consumes it on every recommendation (input + output screen) |
+| Governed RAG / offer + policy knowledge base with citations | `enterprise-knowledge-base` | retrieves grounded offer / policy context from it |
+| Agent registry, versioning, identity, entitlements | `agent-registry` | publishes its A2A AgentCard for discovery |
+| AI-quality / eval / model-risk promotion gate | `model-quality-gate` | its eval metrics gate promotion; the offline gate mirrors it |
+| Observability + immutable WORM prompt/response audit | `agent-observability` | writes audit events to it; traces spans through it |
+| Human-review / maker-checker console | `human-review-console` | routes every escalated recommendation to it (rule R8) |
+| Financial-promotions / marketing-compliance governance | `marketing-compliance-gate` | asks its consent service through the versioned client contract on every customer-facing candidate (rule R7) |
+| On-prem, CPU-only DLP scrub before egress | `onprem-dlp` | the sovereign-DLP option behind the redaction port |
 
 So the guardrail, knowledge base, audit sink, eval platform, human-review console and
 marketing-compliance governor are *dependencies*, not features of this repo.
 
 ### How does this relate to the other marketing systems in the catalog?
 
-Mkt5 is the **only per-customer** marketing system, so its data-protection, tenancy and
+`next-best-action` is the **only per-customer** marketing system, so its data-protection, tenancy and
 consent controls are load-bearing. The broader-audience marketing repos handle no customer
-PII and are a different job: **Mkt1** market intelligence / competitor analysis, **Mkt2**
-campaign planning and budget allocation, **Mkt3** brand-safe creative studio, **Mkt4**
-performance marketing and attribution, and **Mkt6** marketing-compliance / financial-
-promotions governance (which Mkt5 consumes). Check
+PII and are a different job: `market-intelligence` market intelligence / competitor analysis, `campaign-planner`
+campaign planning and budget allocation, `creative-studio` brand-safe creative studio, `performance-marketing-optimisation`
+performance marketing and attribution, and `marketing-compliance-gate` marketing-compliance / financial-
+promotions governance (which `next-best-action` consumes). Check
 [the organization's repository index](https://github.com/portable-genai) before building a
 capability that may already have a home.
 

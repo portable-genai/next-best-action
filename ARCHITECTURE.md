@@ -1,6 +1,6 @@
-# Architecture - Mkt5 Next-Best-Action: Recommendations and Cross-Sell
+# Architecture - `next-best-action` Next-Best-Action: Recommendations and Cross-Sell
 
-Mkt5 is a **ports-and-adapters (hexagonal)** service. The domain is pure Python with no
+`next-best-action` is a **ports-and-adapters (hexagonal)** service. The domain is pure Python with no
 framework dependency; everything external is a port (a `typing.Protocol`) with swappable
 adapter families. This is what makes the managed Google Cloud stack replaceable by an
 on-premise one without touching domain logic.
@@ -40,7 +40,7 @@ code, not a model call.
    (`REQUIRE` / `EXCLUDE` / `REQUIRE_STOCK`) plus offer-level required attributes. Banking =
    suitability; online retail = availability + segment gating. Records which rules fired,
    with citations.
-3. **ConsentPort** (`ports/consent.py`) - asks Mkt6, the one consent and preference store,
+3. **ConsentPort** (`ports/consent.py`) - asks `marketing-compliance-gate`, the one consent and preference store,
    through the pinned `consent-preference-kit` contract. It is fail-closed on missing answers;
    the local adapter uses fictional data and the on-prem adapter is the client integration seam.
 4. **RankingService** (`ranking_service.py`) - combined score
@@ -48,7 +48,7 @@ code, not a model call.
    value is min-max normalised; stable tie-break by offer id.
 
 The **RecommendationService** orchestrator composes the three engines and the ports, guards
-the input/output (Hrz1), traces each step (Hrz5), audits the interaction (Hrz5 WORM), and sets
+the input/output (`agent-guardrail-gateway`), traces each step (`agent-observability`), audits the interaction (`agent-observability` WORM), and sets
 `requires_human_review=True` (maker-checker). The LLM (`LlmPort`) is called only to write the
 "why recommended" explanation over the already-fixed ranking; it never decides a number.
 
@@ -56,10 +56,10 @@ the input/output (Hrz1), traces each step (Hrz5), audits the interaction (Hrz5 W
 
 | Profile | Adapters | Notes |
 | ------- | -------- | ----- |
-| `local` | deterministic recommendation/propensity store, fictional Mkt6 consent stand-in, SQLite FTS5 corpus, deterministic LLM, heuristic guardrail, append-only audit, no-op tracer, in-repo eval, in-process registry/tools | SDK-free, seedable, the dev/test/CI default |
-| `gcp` | Vertex AI recommendations + propensity + BigQuery, Mkt6 consent service, Gemini, File Search, Model Armor, Cloud Logging WORM, Cloud Trace, Gen AI eval, A2A registry, MCP tool catalog | all Google imports are LAZY (method-body), so the module imports under `[dev]` only |
+| `local` | deterministic recommendation/propensity store, fictional `marketing-compliance-gate` consent stand-in, SQLite FTS5 corpus, deterministic LLM, heuristic guardrail, append-only audit, no-op tracer, in-repo eval, in-process registry/tools | SDK-free, seedable, the dev/test/CI default |
+| `gcp` | Vertex AI recommendations + propensity + BigQuery, `marketing-compliance-gate` consent service, Gemini, File Search, Model Armor, Cloud Logging WORM, Cloud Trace, Gen AI eval, A2A registry, MCP tool catalog | all Google imports are LAZY (method-body), so the module imports under `[dev]` only |
 | `onprem` | fail-fast `NotImplementedError` placeholders satisfying the same Protocols | exit-portability / no-lock-in proof |
-| `platform` | thin HTTP clients to the shared Hrz1-Hrz5 platform services; the Hrz4 promotion gate is a live client (`RemoteEvaluationAdapter`, bundle `mkt5-nba`), not a placeholder | reuse the platform where natural |
+| `platform` | thin HTTP clients to the shared `agent-guardrail-gateway`-`agent-observability` platform services; the `model-quality-gate` promotion gate is a live client (`RemoteEvaluationAdapter`, bundle `mkt5-nba`), not a placeholder | reuse the platform where natural |
 
 The `Container` (`config.py`) binds each port to a profile's adapter by dotted path from
 `config/settings.yaml`. Switching profiles is one line (`MKT_NBA_PROFILE`).
@@ -74,9 +74,9 @@ before any managed-stack call, so data never leaves the configured boundary.
 
 ## Provenance and governance
 
-Every recommendation carries `Citation`s (offer catalog + propensity signal + Mkt6 consent
+Every recommendation carries `Citation`s (offer catalog + propensity signal + `marketing-compliance-gate` consent
 decision). The result is `requires_human_review=True` (maker-checker). Every interaction is
-written to a WORM audit sink. The Hrz4 eval gate (`eval/run_eval.py`) blocks promotion if
+written to a WORM audit sink. The `model-quality-gate` (`eval/run_eval.py`) blocks promotion if
 groundedness, citation accuracy, eligibility accuracy or review safety fall below threshold.
-Under the `platform` profile that gate delegates to Hrz4 over HTTP (`POST /v1/evaluations` and
+Under the `platform` profile that gate delegates to `model-quality-gate` over HTTP (`POST /v1/evaluations` and
 `POST /v1/gate`, bundle `mkt5-nba`), which owns the metric set and thresholds.

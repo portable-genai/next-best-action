@@ -1,12 +1,12 @@
 """Local recommendation adapter (RecommendationPort) — deterministic offline profile store.
 
-The ``local`` profile's stand-in for **Vertex AI recommendations + propensity + BigQuery**:
-a deterministic, seedable store over the bundled fictional seed (``_seed.py``), with no
-model and no network. It serves the customer profile, the offer catalog, the per-market/
-vertical eligibility rules and propensity signals derived deterministically from customer
-affinity and offer value. Consent is served by the separate local Mkt6 stand-in. SDK-free and
-unconditional (there
-is no emulator for Vertex), reproducible so the offline CLI and the unit tests agree.
+The ``local`` profile's stand-in for **Vertex AI recommendations + propensity + BigQuery**: a
+deterministic, seedable store over the bundled fictional seed (``_seed.py``), with no model and no
+network. It serves the customer profile, the offer catalog, the per-market/ vertical eligibility
+rules and propensity signals derived deterministically from customer affinity and offer value.
+Consent is served by the separate local marketing-compliance-gate stand-in. SDK-free and
+unconditional (there is no emulator for Vertex), reproducible so the offline CLI and the unit tests
+agree.
 
 The local propensity is intentionally simple and transparent: ``affinity(category)`` blended
 with a small value prior, clamped to 0..1. The deterministic ranking engine, not this

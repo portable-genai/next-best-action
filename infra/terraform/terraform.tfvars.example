@@ -22,7 +22,7 @@ billing_account  = "01ABCD-2345EF-67890A"
 access_policy_id = "987654321098"
 
 # One regular sovereignty perimeter contains the Shared VPC host and BOTH service projects.
-# Mkt6 owns that perimeter in its Terraform state; Mkt5 declares the same contract but must
+# marketing-compliance-gate owns that perimeter in its Terraform state; next-best-action declares the same contract but must
 # not try to create a second regular perimeter. Project NUMBERS are not project ids.
 enable_vpc_sc                    = true
 manage_shared_vpc_sc_perimeter  = false
@@ -40,7 +40,7 @@ shared_vpc_subnetwork = "projects/acme-network-sg-prod/regions/asia-southeast1/s
 # API image (Artifact Registry, asia-southeast1). Build + push the repo Dockerfile here.
 container_image = "asia-southeast1-docker.pkg.dev/acme-nba-sg-prod/mkt/next-best-action:0.1.0"
 
-# Mkt6 is the sole consent authority. The URL is its reviewed network endpoint; the custom
+# marketing-compliance-gate is the sole consent authority. The URL is its reviewed network endpoint; the custom
 # audience is configured on both Cloud Run services and carries no secret material.
 consent_store_url      = "https://marketing-compliance-gate-abc123-as.a.run.app"
 consent_store_audience = "https://mkt6-consent.internal.example"

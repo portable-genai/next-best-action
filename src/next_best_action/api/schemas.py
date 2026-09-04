@@ -38,7 +38,7 @@ class AgentSkillModel(BaseModel):
 
 
 class AgentCardModel(BaseModel):
-    """A2A AgentCard served at ``/.well-known/agent-card.json`` (Hrz3 discovery shape)."""
+    """A2A AgentCard served at ``/.well-known/agent-card.json`` (agent-registry discovery shape)."""
 
     name: str
     description: str

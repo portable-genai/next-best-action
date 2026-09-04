@@ -1,11 +1,11 @@
 """RecommendationPort — customer profile, offer catalog, rules and propensity.
 
-Primary GCP adapter: **Vertex AI recommendations + propensity models** over **BigQuery**
-customer / offer feature tables. The port supplies the raw, vertical-specific inputs the
-deterministic engines consume: the customer (shopper) profile, the offer catalog scoped to
-a market/vertical, the per-market/vertical eligibility rules, and propensity signals per
-candidate offer. Consent is deliberately a separate Mkt6-backed port. This port never ranks
-or decides eligibility itself; deterministic engines do.
+Primary GCP adapter: **Vertex AI recommendations + propensity models** over **BigQuery** customer /
+offer feature tables. The port supplies the raw, vertical-specific inputs the deterministic engines
+consume: the customer (shopper) profile, the offer catalog scoped to a market/vertical, the
+per-market/vertical eligibility rules, and propensity signals per candidate offer. Consent is
+deliberately a separate marketing-compliance-gate-backed port. This port never ranks or decides
+eligibility itself; deterministic engines do.
 """
 
 from __future__ import annotations

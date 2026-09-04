@@ -262,7 +262,7 @@ Identity source per profile:
 | `gcp` / `platform` | `IapIdentityAdapter` | Verifies the IAP-injected signed assertion (signature, audience, issuer, expiry); `tenant` from `hd`; Google SDK imports are lazy so the SDK-free profiles stay import-clean. |
 | `onprem` | `OnPremIdentityAdapter` | Fail-fast `NotImplementedError` placeholder for the client's own IdP (OIDC / SAML): an unverified identity is never accepted. |
 
-Defense in depth: the edge (Cloud IAP / Apigee) authenticates at ingress, Hrz1 applies central
+Defense in depth: the edge (Cloud IAP / Apigee) authenticates at ingress, `agent-guardrail-gateway` applies central
 guardrail policy, and this backend re-validates and derives identity itself. Each layer assumes the
 others may be bypassed; this is the seam that defeats actor spoofing and the confused-deputy risk.
 

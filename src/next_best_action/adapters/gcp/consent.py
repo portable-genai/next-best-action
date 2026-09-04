@@ -1,4 +1,4 @@
-"""Managed ConsentPort: ask Mkt6 through the pinned consent client contract."""
+"""Managed ConsentPort: ask marketing-compliance-gate through the pinned consent client contract."""
 
 from __future__ import annotations
 
@@ -16,7 +16,9 @@ _SERVICE_ACTOR = "next-best-action"
 
 
 class RemoteConsentAdapter:
-    """Obtain a fail-closed consent decision from the configured Mkt6 service."""
+    """Obtain a fail-closed consent decision from the configured
+    marketing-compliance-gate service.
+    """
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
@@ -25,14 +27,15 @@ class RemoteConsentAdapter:
         base_url = self._settings.consent_url.strip()
         if not base_url:
             raise ConsentUnavailableError(
-                "consent_url is not configured. Set MKT_CONSENT_STORE_URL to Mkt6; the "
+                "consent_url is not configured. Set MKT_CONSENT_STORE_URL to "
+                "marketing-compliance-gate; the "
                 "managed profile has no private consent-store fallback."
             )
         audience = self._settings.consent_audience.strip()
         if not audience:
             raise ConsentUnavailableError(
                 "consent_audience is not configured. Set MKT_CONSENT_STORE_AUDIENCE to the "
-                "custom audience Mkt6 verifies."
+                "custom audience marketing-compliance-gate verifies."
             )
         return ConsentClient(base_url, token_provider=lambda: self._id_token(audience))
 

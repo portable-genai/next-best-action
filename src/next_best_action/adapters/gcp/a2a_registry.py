@@ -37,7 +37,8 @@ _D5_SKILLS: tuple[AgentSkill, ...] = (
         name="Eligibility and consent check",
         description=(
             "Run the deterministic eligibility / suitability and marketing-consent checks "
-            "for a customer and an offer, with the rules and Mkt6 consent decision cited."
+            "for a customer and an offer, with the rules and marketing-compliance-gate consent "
+            "decision cited."
         ),
     ),
 )
