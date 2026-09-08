@@ -8,6 +8,8 @@ PY ?= python3.14
 VENV ?= .venv
 BIN := $(VENV)/bin
 PROFILE ?= local
+PROJECT ?= $(GOOGLE_CLOUD_PROJECT)
+TENANT  ?= demo-bank   # a deployment's is its IAP hosted domain, never this
 
 API_APP := next_best_action.api.app:app
 API_HOST ?= 127.0.0.1  # no-auth local dev binds loopback; override deliberately
@@ -25,9 +27,10 @@ export MKT_NBA_PROFILE := $(PROFILE)
 # list because the served self-test and the browser walkthrough both read the evidence hooks
 # the renderer emits and both start the server, so they are gate-relevant code, not scratch
 # scripts.
-DEMO_SCRIPTS := scripts/render_recommendation_ui.py scripts/demo_server.py scripts/demo_selftest.py
+DEMO_SCRIPTS := scripts/render_recommendation_ui.py scripts/demo_server.py scripts/demo_selftest.py \
+		scripts/load_demo_book.py scripts/render_demo_book.py
 
-.PHONY: venv install install-demo install-gcp lock lint format typecheck test eval gate \
+.PHONY: demo-book-dry-run load-demo-book venv install install-demo install-gcp lock lint format typecheck test eval gate \
         ui-install ui-check portability \
         demo demo-server demo-selftest demo-browser smoke-local run-api run-ui \
         tf-validate tf-plan clean
@@ -62,6 +65,10 @@ test:
 	$(BIN)/pytest -m "not integration" -q
 
 eval:
+	# The propensity table is RENDERED from a recorded formula, so a change to a customer
+	# affinity or an offer value that was never re-rendered fails here rather than leaving
+	# the book scoring a catalog that has moved.
+	$(BIN)/python scripts/render_demo_book.py --check
 	$(BIN)/python eval/run_eval.py
 
 # The full gate, green before any change lands.
@@ -112,6 +119,12 @@ tf-plan: ## Terraform plan for the pinned Singapore region (residency posture ch
 
 tf-validate:
 	cd $(TF_DIR) && terraform fmt -check -recursive && terraform init -backend=false -input=false && terraform validate
+
+demo-book-dry-run: ## Write the NDJSON the loader WOULD send to BigQuery, and stop.
+	$(BIN)/python scripts/load_demo_book.py --tenant $(TENANT) --dry-run build/demo-book
+
+load-demo-book: ## Load the fictional feature book into a deployment's dataset (needs TENANT).
+	$(BIN)/python scripts/load_demo_book.py --project $(PROJECT) --tenant $(TENANT)
 
 clean:
 	rm -rf $(VENV) .pytest_cache .ruff_cache .mypy_cache

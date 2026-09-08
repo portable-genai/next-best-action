@@ -16,7 +16,9 @@ profile deliberately. An unknown or mis-capitalised value (`Local`, `GCP`) is re
 rather than silently selecting neither the relaxations nor the restrictions.
 
 - `local` (SDK-free): the whole pipeline runs offline (deterministic recommender and LLM,
-  in-memory customers / offers, fictional `marketing-compliance-gate` consent stand-in using canonical wire types).
+  a DuckDB store holding the same four tables the managed dataset holds and seeded from the
+  shipped demo book, fictional `marketing-compliance-gate` consent stand-in using canonical
+  wire types).
   No Google Cloud SDK. This is what CI and the demo run.
 - `gcp`: the managed stack (Vertex recommendations, BigQuery features, Cloud DLP, Model Armor,
   Cloud Logging).
@@ -96,6 +98,32 @@ docstring in `src/next_best_action/agent/root_agent.py`. Record the resulting `r
 resource name in `settings.agent_engine.resource_name` (or `MKT_AGENT_ENGINE`). To attach an
 out-of-process governed MCP tool server, set `MKT_NBA_MCP_SERVER_URL`; unset, the agent uses
 its in-process FunctionTools.
+
+## Loading the feature book
+
+The `gcp` profile reads customers, offers, eligibility rules and propensity signals from the
+`mkt_nba` BigQuery dataset. Terraform creates those tables and leaves them empty;
+`scripts/load_demo_book.py` fills them with the shipped fictional book, which is the same
+book the laptop serves from DuckDB.
+
+```bash
+make demo-book-dry-run TENANT=<hosted-domain>          # writes build/demo-book/*.ndjson, loads nothing
+make load-demo-book PROJECT=<id> TENANT=<hosted-domain>
+```
+
+Three things decide whether this works.
+
+**The tenant is required and `demo-bank` is not it.** Every customer row carries the tenant
+that owns it, and the orchestrator compares that to the tenant the identity adapter resolved.
+Rows under any other value are invisible to every real user and read exactly like an empty
+dataset.
+
+**The loader truncates, so it refuses a book it did not write.** It proceeds only when the
+target tables are empty or `book_manifest` says what they hold is fictional.
+
+**Every candidate offer needs a propensity signal.** The managed adapter refuses to
+recommend an offer nothing has scored, rather than ranking it on a default. The book ships
+one signal per customer and offer in scope, and the contract test fails if one goes missing.
 
 ## 3. PII redaction and the jurisdiction pack
 

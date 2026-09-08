@@ -97,6 +97,8 @@ local:
   db_path: ${MKT_LOCAL_DB:-}            # SQLite FTS5 offer/policy corpus index
   audit_path: ${MKT_LOCAL_AUDIT:-}      # append-only local audit (WORM stand-in)
   seed_path: ${MKT_LOCAL_SEED:-}        # catalog/customer seed JSON ("" => bundled fictional)
+  book_path: ${MKT_LOCAL_BOOK:-}        # DuckDB feature store (customers, offers, rules,
+                                        # propensity), seeded from the shipped demo book
 
 # Jurisdiction-driven PII redaction (compliance packs). The local regex redactor, the GCP
 # DLP adapter and the eval gate detect the national identifiers for these jurisdictions
