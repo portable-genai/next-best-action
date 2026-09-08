@@ -52,6 +52,61 @@ def _strings(value: object) -> tuple[str, ...]:
     return tuple(str(item) for item in parsed)
 
 
+#: The columns this adapter reads out of each table, per the settings key naming that table.
+#: Declared rather than only dereferenced inside row mapping, because the queries are
+#: ``SELECT *`` and a read set spelled only in attribute lookups is invisible to any check.
+#: A contract test holds these against the columns ``infra/terraform/bigquery.tf`` declares,
+#: which is how a column that is read and was never provisioned fails offline instead of on a
+#: deployment at the first request.
+SELECTED_COLUMNS: dict[str, tuple[str, ...]] = {
+    "customers_table": (
+        "customer_id",
+        "tenant",
+        "market",
+        "vertical",
+        "attributes_json",
+        "holdings",
+        "affinities_json",
+    ),
+    "offers_table": (
+        "offer_id",
+        "name",
+        "kind",
+        "market",
+        "vertical",
+        "category",
+        "base_value",
+        "required_consent_channel",
+        "required_attributes_json",
+        "excluded_if_held",
+        "stock",
+        "evidence_summary",
+        "active",
+    ),
+    "eligibility_rules_table": (
+        "rule_id",
+        "market",
+        "vertical",
+        "effect",
+        "attribute",
+        "value",
+        "applies_to_kind",
+        "applies_to_category",
+        "description",
+        "citation_title",
+        "active",
+    ),
+    "propensity_table": (
+        "customer_id",
+        "offer_id",
+        "market",
+        "vertical",
+        "score",
+        "model_version",
+    ),
+}
+
+
 class VertexRecommendationAdapter:
     """Read governed inputs from BigQuery and optional online propensity from Vertex AI."""
 

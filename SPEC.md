@@ -24,7 +24,11 @@ and why. The consequential decisions are deterministic and auditable; the LLM on
 - **EligibilityResult** - `ELIGIBLE` | `INELIGIBLE`, the reasons and failed rule ids.
 - **ConsentRecord / ConsentDecision** - per-channel marketing-consent state and the gating
   decision (allowed + channel + reason + citation).
-- **PropensitySignal** - a 0..1 model score per (customer, offer).
+- **PropensitySignal** - a 0..1 model score per (customer, offer). **Read from a feature
+  table on every profile**, never derived at request time: a model writes these rows in
+  production, and an offer with no signal is refused rather than ranked on a default.
+  The local profile computed them until 2026-09-08, so it could rank an offer the
+  deployment refuses to score.
 - **RankedOffer / Ranking** - the deterministic score breakdown and ordered list.
 - **Recommendation** - a ranked offer bundled with its eligibility outcome, consent decision,
   LLM explanation and citations.
@@ -36,7 +40,7 @@ and why. The consequential decisions are deterministic and auditable; the LLM on
 
 | Port | Responsibility | Primary GCP adapter |
 | ---- | -------------- | ------------------- |
-| `RecommendationPort` | customer profile, offer catalog, eligibility rules, propensity signals | Vertex AI recommendations + propensity + BigQuery |
+| `RecommendationPort` | customer profile, offer catalog, eligibility rules, propensity signals | Vertex AI recommendations + propensity + BigQuery `mkt_nba`; the `local` profile serves the SAME four tables from DuckDB, seeded from the shipped book |
 | `ConsentPort` | cited marketing permission from the single `marketing-compliance-gate` system of record | `marketing-compliance-gate` over `consent-preference-kit` |
 | `KnowledgeBasePort` | offer / policy corpus retrieval | File Search / Agent Search |
 | `LlmPort` | "why recommended" explanation (narration only) | Gemini |

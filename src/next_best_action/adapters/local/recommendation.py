@@ -1,83 +1,143 @@
-"""Local recommendation adapter (RecommendationPort) — deterministic offline profile store.
+"""Local recommendation adapter (RecommendationPort) : the laptop's DuckDB feature store.
 
-The ``local`` profile's stand-in for **Vertex AI recommendations + propensity + BigQuery**: a
-deterministic, seedable store over the bundled fictional seed (``_seed.py``), with no model and no
-network. It serves the customer profile, the offer catalog, the per-market/ vertical eligibility
-rules and propensity signals derived deterministically from customer affinity and offer value.
-Consent is served by the separate local marketing-compliance-gate stand-in. SDK-free and
-unconditional (there is no emulator for Vertex), reproducible so the offline CLI and the unit tests
-agree.
+The ``local`` profile's stand-in for **BigQuery plus Vertex AI**: a DuckDB file holding the
+same four tables the managed dataset holds, in the same column order, self-seeded from the
+shipped book under ``next_best_action/data/demo_book/``. DuckDB is an embedded engine in a
+wheel, so this needs no service, no credentials and nothing to start, and the offline gate
+stays offline while the store it exercises is still SQL.
 
-The local propensity is intentionally simple and transparent: ``affinity(category)`` blended
-with a small value prior, clamped to 0..1. The deterministic ranking engine, not this
-signal, decides the final order.
+Holding the same shape as the managed store is the point. Two stores that merely both work
+are two stores nobody can compare; two stores over one book and one column order can be run
+side by side and their answers held against each other.
+
+**Propensity is read, not computed, and that is a behaviour change worth stating.** This
+adapter used to derive a score at request time from the customer's affinity blended with a
+value prior, while the managed adapter has always read rows and refused to recommend an offer
+with no signal. The two profiles therefore disagreed about what a propensity is: a function
+here and a feature table there, so the local profile could rank an offer the deployment would
+refuse. In production a model writes those rows, which makes reading them the real shape. The
+scores the old formula produced are shipped in the book, so nothing about the demo's numbers
+changed; what changed is that both profiles now get them the same way, including the refusal.
+
+Consent is not served here. It belongs to `marketing-compliance-gate` and is read from that
+service, so the ranking engine never gets a second, private answer to a question another
+system owns.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from hex_service_kit.demobook import DuckDbStore
+
+from ... import demo_book
 from ...config import Settings
 from ...domain.errors import UnknownCustomerError
 from ...domain.models import (
-    Citation,
     Customer,
     EligibilityRule,
     Market,
     Offer,
     PropensitySignal,
-    SourceType,
     Vertical,
 )
-from ._seed import (
-    CUSTOMERS,
-    ELIGIBILITY_RULES,
-    OFFER_CATALOG,
-)
+
+#: Default on-disk location for the laptop store (overridable via settings.local.book_path).
+_DEFAULT_BOOK_PATH = Path.home() / ".next_best_action" / "book.duckdb"
+
+_SOURCE = "DuckDB propensity feature table (local)"
 
 
 class LocalRecommendationAdapter:
-    """Deterministic profile / catalog / propensity store over the seeded fictional data."""
+    """Serve customers, offers, rules and propensity from the laptop's DuckDB book."""
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
+        path = getattr(getattr(settings, "local", None), "book_path", "") or str(_DEFAULT_BOOK_PATH)
+        self._store = DuckDbStore(demo_book.BOOK, path)
+        self._conn = self._store.connection
 
+    def close(self) -> None:
+        """Close the connection (the CLI and tests reopen the same file)."""
+        self._store.close()
+
+    # ------------------------------------------------------------------ #
+    # RecommendationPort
+    # ------------------------------------------------------------------ #
     def customer(self, customer_id: str, market: Market, vertical: Vertical) -> Customer:
-        customer = CUSTOMERS.get(customer_id)
-        if customer is None:
+        columns = ", ".join(demo_book.CUSTOMERS.columns)
+        rows = self._conn.execute(
+            f"SELECT {columns} FROM customers "
+            "WHERE customer_id = ? AND market = ? AND vertical = ?",
+            [customer_id, market.value, vertical.value],
+        ).fetchall()
+        if len(rows) != 1:
+            known = [
+                row[0]
+                for row in self._conn.execute(
+                    "SELECT customer_id FROM customers ORDER BY 1"
+                ).fetchall()
+            ]
             raise UnknownCustomerError(
-                f"unknown customer '{customer_id}'; seed customers: {sorted(CUSTOMERS)}"
+                f"unknown customer '{customer_id}' in {market.value}/{vertical.value}; "
+                f"seed customers: {known}"
             )
-        return customer
+        row = dict(zip(demo_book.CUSTOMERS.columns, rows[0], strict=True))
+        if not str(row.get("tenant") or "").strip():
+            # Fail closed exactly as the managed adapter does: a customer with no owning
+            # tenant is unreachable rather than public.
+            raise ValueError("customer row has no tenant partition")
+        return demo_book.to_customer(row)
 
     def catalog(self, market: Market, vertical: Vertical) -> tuple[Offer, ...]:
-        return OFFER_CATALOG.get((market, vertical), ())
+        columns = ", ".join(demo_book.OFFERS.columns)
+        rows = self._conn.execute(
+            f"SELECT {columns} FROM offers "
+            "WHERE market = ? AND vertical = ? AND active = TRUE ORDER BY offer_id LIMIT ?",
+            [market.value, vertical.value, self._settings.recommendation.max_candidates],
+        ).fetchall()
+        return tuple(
+            demo_book.to_offer(dict(zip(demo_book.OFFERS.columns, row, strict=True)))
+            for row in rows
+        )
 
     def eligibility_rules(self, market: Market, vertical: Vertical) -> tuple[EligibilityRule, ...]:
-        return ELIGIBILITY_RULES.get((market, vertical), ())
+        columns = ", ".join(demo_book.ELIGIBILITY_RULES.columns)
+        rows = self._conn.execute(
+            f"SELECT {columns} FROM eligibility_rules "
+            "WHERE market = ? AND vertical = ? AND active = TRUE ORDER BY rule_id",
+            [market.value, vertical.value],
+        ).fetchall()
+        return tuple(
+            demo_book.to_rule(dict(zip(demo_book.ELIGIBILITY_RULES.columns, row, strict=True)))
+            for row in rows
+        )
 
     def propensity(
         self, customer: Customer, offers: tuple[Offer, ...]
     ) -> tuple[PropensitySignal, ...]:
-        signals: list[PropensitySignal] = []
-        for offer in offers:
-            affinity = customer.affinities.get(offer.category, 0.3)
-            # Blend affinity (90%) with a small value prior (10%) so a high-value offer with
-            # no affinity still gets a non-zero, deterministic propensity.
-            value_prior = min(offer.base_value / 600.0, 1.0)
-            score = max(0.0, min(0.9 * affinity + 0.1 * value_prior, 1.0))
-            signals.append(
-                PropensitySignal(
-                    offer_id=offer.id,
-                    score=round(score, 4),
-                    citation=Citation(
-                        source_id=f"propensity-{offer.id}",
-                        source_type=SourceType.PROPENSITY,
-                        title=f"Propensity signal for {offer.name}",
-                        snippet=(
-                            f"affinity({offer.category})={affinity:.2f}, "
-                            f"value_prior={value_prior:.2f} (FICTIONAL local model)."
-                        ),
-                        score=round(score, 4),
-                    ),
-                )
-            )
-        return tuple(signals)
+        """Read one stored signal per candidate offer, refusing when any is missing.
+
+        The refusal is deliberate parity with the managed adapter. An offer with no signal is
+        an offer nothing has scored, and ranking it on a default would put a number in front
+        of a customer that no model produced.
+        """
+        if not offers:
+            return ()
+        names = {offer.id: offer.name for offer in offers}
+        placeholders = ", ".join("?" for _ in offers)
+        rows = self._conn.execute(
+            "SELECT customer_id, offer_id, market, vertical, score, model_version, computed_at "
+            "FROM propensity_signals "
+            "WHERE customer_id = ? AND market = ? AND vertical = ? "
+            f"AND offer_id IN ({placeholders})",
+            [customer.id, customer.market.value, customer.vertical.value, *names],
+        ).fetchall()
+        columns = demo_book.PROPENSITY_SIGNALS.columns
+        by_offer = {str(row[1]): dict(zip(columns, row, strict=True)) for row in rows}
+        missing = [offer.id for offer in offers if offer.id not in by_offer]
+        if missing:
+            raise RuntimeError(f"local propensity has no signal for offers: {missing}")
+        return tuple(
+            demo_book.to_signal(by_offer[offer.id], names[offer.id], _SOURCE) for offer in offers
+        )

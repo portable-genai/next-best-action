@@ -375,6 +375,7 @@ class LocalSettings:
     db_path: str = ""  # SQLite FTS5 offer/policy corpus index
     audit_path: str = ""  # append-only audit store
     seed_path: str = ""  # catalog/customer seed JSON ("" => bundled fictional seed)
+    book_path: str = ""  # DuckDB feature store; "" => ~/.next_best_action/book.duckdb
 
 
 @dataclass(frozen=True)
