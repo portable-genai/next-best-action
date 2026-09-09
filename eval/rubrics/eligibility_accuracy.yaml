@@ -4,14 +4,22 @@
 # may be ineligible or consent-suppressed, and the recommended top offer must match the
 # expected eligible, consented, highest-scoring offer for the golden case. The result must
 # always carry the human-review flag (nothing consequential auto-executes).
+#
+# The bar was 0.90 and is 1.0, and the change is arithmetic rather than a tightening. The
+# metric is binary per case over 8 golden cases, so 0.90 needed 8 of 8 to pass: 7/8 is
+# 0.875. A bar of 0.90 therefore tolerated no failure at all while reading as though it
+# tolerated one, which is the worse of the two states. 1.0 says the same thing and says it
+# out loud. Tolerating one miss would need 10 cases; the number to move first is the corpus.
 metric: eligibility_accuracy
-threshold: 0.90
+threshold: 1.0
 description: >-
   Fraction of golden cases where the deterministic eligibility + consent gate held (no
   ineligible / consent-suppressed recommendation) and the top recommendation matched the
-  expected offer.
+  expected offer. Scored once per case; 8 cases.
 companion_metrics:
   review_safety:
-    threshold: 0.99
+    threshold: 1.0
     description: >-
       Fraction of results that correctly set requires_human_review=True (maker-checker).
+      Binary per case over 8 cases, where 0.99 was already 8-of-8; a recommendation set that
+      lost the human gate is a defect and not a rounding loss.

@@ -153,9 +153,50 @@ def check_served(paths: list[Path]) -> None:
     )
 
 
+def check_eval_act() -> None:
+    """The eval act must show every metric it prints a bar for, going red on its own defect.
+
+    The failure mode this guards is the one that makes an eval slide worse than no slide: a
+    table of green numbers, an audience that reads it as assurance, and one metric quietly
+    added since the last rehearsal that has no red case behind it. That metric proves nothing
+    and looks exactly like the ones that do.
+    """
+    import io
+    from contextlib import redirect_stdout
+
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        demo._step_eval()
+    printed = buffer.getvalue()
+
+    scored = {
+        line.split()[0]
+        for line in printed.splitlines()
+        if line.startswith("    ") and line.strip().endswith(("PASS", "FAIL"))
+    }
+    reddened = {
+        line.split()[0] for line in printed.splitlines() if "goes RED on its own defect" in line
+    }
+    assert scored, "the eval act printed no metric table at all"
+    assert scored == reddened, (
+        "shown green without being shown red: "
+        f"{sorted(scored - reddened)}; every metric the demo puts on the slide has to be "
+        "demonstrated failing, or the slide is a claim rather than evidence"
+    )
+    assert "does NOT measure" in printed, (
+        "the eval act stopped at the passing table; the limits are the half an audience "
+        "cannot infer and will otherwise assume away"
+    )
+    print(
+        f"PASS eval act: {len(scored)} metrics scored live, and every one of them shown "
+        "failing its own planted defect, with the gate's limits named"
+    )
+
+
 def main() -> int:
     paths = check_in_process()
     check_served(paths)
+    check_eval_act()
     return 0
 
 

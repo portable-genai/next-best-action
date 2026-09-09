@@ -7,6 +7,14 @@ the recommendation audit views to ``scripts/out/*.json`` for the dependency-free
 screenshots. It is also the end-to-end smoke for the slice: deterministic, so screenshots
 never drift.
 
+The last act is the eval, and it is not a summary of one. A demo that shows six good answers
+has shown that the system can be right, which is the easy half and the half an audience will
+believe anyway. What it has not shown is how anyone would know when it is wrong. So the act
+runs the SHIPPED scorers over the results the audience just watched being produced, then
+breaks each one on purpose and shows it going red, and finishes by naming what the gate does
+not measure at all. A metric that never went red in front of the room is a claim, not
+evidence.
+
 Usage::
 
     MKT_NBA_PROFILE=local python scripts/demo.py
@@ -61,6 +69,61 @@ def _service():  # type: ignore[no-untyped-def]
     return make_recommendation_service(Container(settings))
 
 
+def _step_eval() -> None:
+    """The scorers that gate this repo, run live, and each one shown failing on purpose."""
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "eval"))
+    from agent_eval_kit import load_rubrics  # noqa: PLC0415
+    from run_eval import (  # noqa: PLC0415 - the eval is a script, imported only for this act
+        DEFAULT_DATASET,
+        RUBRICS,
+        SCORED,
+        _red_case_proofs,
+        load_thresholds_from_rubrics,
+        run_offline,
+    )
+
+    print("\n=== the eval that gates this system ===")
+    thresholds = load_thresholds_from_rubrics()
+    report = run_offline(DEFAULT_DATASET, thresholds)
+    print(
+        f"  {report.n_examples} golden cases, {len(SCORED)} metrics, "
+        f"dataset {report.dataset_digest[:12]}"
+    )
+    for row in report.results:
+        verdict = "PASS" if row.passed else "FAIL"
+        print(f"    {row.metric:28s} {row.score:.3f}  bar {row.threshold:.2f}  {verdict}")
+
+    print("\n  each of those, broken on purpose, to show the bar can actually be missed:")
+    for proof in _red_case_proofs():
+        proof()  # raises if the degraded case still scores above the bar
+        print(f"    {proof.__name__:28s} goes RED on its own defect")
+
+    print("\n  the bars, and why they are where they are:")
+    for rubric in sorted(load_rubrics(RUBRICS), key=lambda r: r.metric):
+        print(f"    {rubric.metric:28s} {rubric.threshold:.2f}  {rubric.description.strip()[:88]}")
+
+    print("\n  what this gate does NOT measure, said out loud rather than left to be assumed:")
+    for line in _UNMEASURED:
+        print(f"    - {line}")
+
+
+#: The honest half of the eval act. Each of these is a real limit of the offline gate, and a
+#: demo that stops at the passing table invites the room to assume none of them exist.
+_UNMEASURED = (
+    "whether an offer SHOULD exist for a customer. The gate checks the catalogue is fully "
+    "accounted for, not that the catalogue is the right one.",
+    "the ranking weights. 4 of the 13 adjacent pairs have propensity and value disagreeing; "
+    "the book cannot decide those, so ranking_order stays silent and the weights are "
+    "unexamined by this gate.",
+    "whether the propensity model is any good. The scores are read from the book, and the "
+    "book's formula is fictional; a real deployment gates the model separately.",
+    "the explanation text. It is generated after the ranking is fixed, and no metric here "
+    "reads it for anything except citations and PII.",
+)
+
+
 def main() -> int:
     _OUT.mkdir(parents=True, exist_ok=True)
     service = _service()
@@ -76,6 +139,7 @@ def main() -> int:
         out_path = _OUT / f"{market.value.lower()}_{vertical.value}_{customer_id}.json"
         out_path.write_text(json.dumps(to_jsonable(result), indent=2), encoding="utf-8")
         print(f"  wrote {out_path}")
+    _step_eval()
     return 0
 
 

@@ -1,11 +1,28 @@
 # Golden next-best-action set for the D5 offline eval gate. OBVIOUSLY-FICTIONAL synthetic
 # cases. Each line: a (customer_id, market, vertical) request plus the expected top offer id
-# (the eligible, consented, highest-scoring offer from the seeded data in
-# adapters/local/_seed.py) and a minimum recommendation count. Covers BOTH verticals
-# (banking AND online retail) across ALL THREE markets (JP, AU, SG).
+# (the eligible, consented, highest-scoring offer from the shipped demo book) and a minimum
+# recommendation count. Covers BOTH verticals (banking AND online retail) across ALL THREE
+# markets (JP, AU, SG).
+#
+# Every expected_top_offer here is checked against the book's own dominance rule as well as
+# against the engine: no other offer in the returned list has BOTH a higher published
+# propensity and a higher published base value than the one named. A label taken from what
+# the engine happened to return is not a label, it is a recording.
+#
+# au-banking names au-bank-term-deposit, where it used to name au-bank-offset. The book now
+# carries a third AU banking offer, and the term deposit dominates the offset on both inputs
+# (propensity 0.4833 vs 0.4733, value 200 vs 140), so this is the book's answer and not the
+# weights'. The home loan stays out of the list: this persona's credit flag is adverse.
 {"id": "sg-banking", "customer_id": "cust-sg-bank-1", "market": "SG", "vertical": "banking", "expected_top_offer": "sg-bank-credit-card", "min_recommendations": 1}
 {"id": "jp-banking", "customer_id": "cust-jp-bank-1", "market": "JP", "vertical": "banking", "expected_top_offer": "jp-bank-fx-wallet", "min_recommendations": 1}
-{"id": "au-banking", "customer_id": "cust-au-bank-1", "market": "AU", "vertical": "banking", "expected_top_offer": "au-bank-offset", "min_recommendations": 1}
+{"id": "au-banking", "customer_id": "cust-au-bank-1", "market": "AU", "vertical": "banking", "expected_top_offer": "au-bank-term-deposit", "min_recommendations": 1}
 {"id": "sg-retail", "customer_id": "cust-sg-retail-1", "market": "SG", "vertical": "online_retail", "expected_top_offer": "sg-retail-prime-delivery", "min_recommendations": 1}
 {"id": "jp-retail", "customer_id": "cust-jp-retail-1", "market": "JP", "vertical": "online_retail", "expected_top_offer": "jp-retail-loyalty-gold", "min_recommendations": 1}
 {"id": "au-retail", "customer_id": "cust-au-retail-1", "market": "AU", "vertical": "online_retail", "expected_top_offer": "au-retail-outdoor-kit", "min_recommendations": 1}
+# Two cases added for the ranking metrics. The six above were chosen for market and vertical
+# coverage, and five of them return one or two offers: a list of one asserts no order, so the
+# original corpus could only ever have tested rank one. These two personas hold nothing and
+# have granted every channel their market's offers require, so the whole catalog in scope
+# reaches the ranking and rank three exists to be checked.
+{"id": "sg-banking-full-consent", "customer_id": "cust-sg-bank-2", "market": "SG", "vertical": "banking", "expected_top_offer": "sg-bank-wealth-upgrade", "min_recommendations": 3}
+{"id": "au-retail-value-vs-propensity", "customer_id": "cust-au-retail-2", "market": "AU", "vertical": "online_retail", "expected_top_offer": "au-retail-outdoor-kit", "min_recommendations": 3}

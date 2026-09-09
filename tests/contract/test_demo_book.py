@@ -56,9 +56,26 @@ def store() -> LocalRecommendationAdapter:
 # --------------------------------------------------------------------------- #
 def test_the_shipped_book_is_internally_consistent() -> None:
     demo_book.validate()
-    assert len(demo_book.BOOK.rows("customers")) == 6
-    assert len(demo_book.BOOK.rows("offers")) == 14
+    assert len(demo_book.BOOK.rows("customers")) == 8
+    assert len(demo_book.BOOK.rows("offers")) == 19
     assert demo_book.BOOK.manifest()["fictional"] is True
+
+
+def test_every_market_and_vertical_ships_enough_offers_to_have_an_order() -> None:
+    """Two offers make a top; three make a ranking, and a ranking is what this system sells.
+
+    The book shipped one or two candidates per persona, which meant the eval could check
+    which offer came first and had nothing to say about the list under it. Growing it is what
+    made `ranking_order` and `ranking_completeness` able to measure anything, so the shape is
+    asserted here rather than left to be quietly shrunk back.
+    """
+    from collections import Counter
+
+    scopes = Counter(
+        (row["market"], row["vertical"]) for row in demo_book.BOOK.rows("offers") if row["active"]
+    )
+    thin = {scope: count for scope, count in scopes.items() if count < 3}
+    assert not thin, f"market/vertical scopes with fewer than three active offers: {thin}"
 
 
 def test_a_candidate_offer_without_a_propensity_signal_is_refused(

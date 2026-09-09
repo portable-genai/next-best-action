@@ -56,6 +56,37 @@ class LocalRecommendationAdapter:
         path = getattr(getattr(settings, "local", None), "book_path", "") or str(_DEFAULT_BOOK_PATH)
         self._store = DuckDbStore(demo_book.BOOK, path)
         self._conn = self._store.connection
+        self._reseed_if_stale()
+
+    def _reseed_if_stale(self) -> None:
+        """Re-seed the file store when it no longer holds the book this build ships.
+
+        The kit seeds a store that is empty and then leaves it alone, which is right for the
+        rows an audience writes during a demo and wrong for the shipped tables. Under
+        ~/.next_best_action/book.duckdb, "leaves it alone" means forever: the first run on a
+        laptop froze that day's book, and every later run served it. So the offline eval, the
+        demo and the console read whatever this machine cached the first time anyone ran
+        them, while a fresh checkout in CI read the repository. That is the worst shape a
+        disagreement can take, because the machine it is wrong on is the one doing the demo.
+
+        Compared on the manifest version and the shipped row counts, both of which come from
+        the book itself. `seed_shipped_book` refuses on any store whose manifest does not say
+        its rows are fictional, so a store holding real data is never overwritten here.
+        """
+        shipped = demo_book.BOOK.manifest()
+        stored = self._store.manifest_rows()
+        counts = self._store.row_counts()
+        expected = {
+            table.name: len(demo_book.BOOK.rows(table.name))
+            for table in demo_book.BOOK.load_order()
+            if table.name != demo_book.BOOK.MANIFEST.name
+        }
+        version_matches = len(stored) == 1 and stored[0].get("book_version") == shipped.get(
+            "book_version"
+        )
+        if version_matches and all(counts.get(name) == n for name, n in expected.items()):
+            return
+        self._store.seed_shipped_book()
 
     def close(self) -> None:
         """Close the connection (the CLI and tests reopen the same file)."""

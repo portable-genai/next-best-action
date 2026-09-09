@@ -1,0 +1,25 @@
+# Conservation rubric for D5: every offer in the catalog is accounted for, one way or another.
+#
+# The failure this exists for is a SHORTER list. Groundedness, citation accuracy, ranking
+# order and eligibility accuracy all score what is in the result, so an offer that quietly
+# stops being a candidate takes its own evidence with it and every one of them still reads
+# 1.000. That is the same class of defect as an empty evaluation passing a promotion gate:
+# what was not measured looks exactly like what passed.
+#
+# So the check runs over the catalog rather than over the answer. For each active book offer
+# in the case's market and vertical, the offer must appear exactly once across
+# recommendations + suppressed + consent_suppressed, unless the book itself removes it
+# (already held, conflicting with a holding, or out of stock), in which case it must appear
+# in none of them. The book decides which of the two applies; the engine only supplies where
+# the offer ended up.
+#
+# Denominator: 25 offer-decisions across the 8 golden cases, not 8. The bar is 1.0 because an
+# offer that is neither recommended nor accounted for as suppressed is unexplained, and an
+# unexplained offer is what a regulator asks about. A bar of 0.96 would tolerate one, and at
+# 25 decisions 0.96 is exactly the arithmetic that lets one through.
+metric: ranking_completeness
+threshold: 1.0
+description: >-
+  Share of the shipped catalog's in-scope offers whose disposition matches what the book
+  requires: recommended or explicitly suppressed when the customer could see it, absent from
+  all three lists when the book removes it.

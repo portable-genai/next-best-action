@@ -1,0 +1,30 @@
+# Ranking rubric for D5: is the LIST right, not just the offer at the top of it.
+#
+# eligibility_accuracy reads `result.top` and the gate flags. Everything below rank one was
+# unscored, so a service that returned the right first offer and then anything at all, in
+# any order, scored a perfect 1.000. A customer sees the list; rank two is the offer a
+# relationship manager reaches for when the first is declined.
+#
+# The oracle is the SHIPPED demo book, and specifically dominance within it: where an offer
+# has both a higher published propensity and a higher published base value than the one
+# below it, every weighting with non-negative weights ranks it higher, so the book settles
+# that pair without reference to the tuning. Two things this deliberately is NOT:
+#
+#   * not the engine's own combined score, which would be in its own order by construction;
+#   * not the published propensity order either. The ranking is 0.6*propensity + 0.4*value,
+#     and the two inputs genuinely disagree on 4 of the 13 adjacent pairs in this corpus
+#     (au-retail-bnpl has the higher propensity and the lower value). Those pairs are the
+#     weights' business decision, not a correctness claim, and this metric stays silent on
+#     them: they contribute no score rather than a guess.
+#
+# Denominator: 9 dominance-decided adjacent pairs across the 8 golden cases, one score each,
+# not 8. Scoring it per case would give a single-offer case, which asserts no order at all,
+# the same weight as a three-offer case, which asserts two things. At 9 pairs a bar of 0.88
+# would tolerate one violation; a pair the book decides and the engine got backwards is a
+# defect under every tuning, so the bar is 1.0 and no denominator makes it otherwise.
+metric: ranking_order
+threshold: 1.0
+description: >-
+  Share of adjacent recommendation pairs, among those the shipped book's propensity and value
+  both order the same way, that the engine ranked in that order. Silent on pairs where the
+  two inputs disagree.
