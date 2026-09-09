@@ -114,3 +114,30 @@ resource "google_bigquery_table" "propensity_signals" {
     { name = "computed_at", type = "TIMESTAMP", mode = "NULLABLE" },
   ])
 }
+
+# What this dataset holds and whether it may be replaced. `fictional` is the loader's
+# overwrite guard: a populated dataset without it is somebody's real feature store and the
+# loader refuses (`scripts/load_demo_book.py`, `hex_service_kit.demobook.may_overwrite`). Not
+# deletion-protected, because the loader rewrites this row on every load and the guard is the
+# control rather than the flag.
+#
+# THIS TABLE WAS MISSING while the three siblings carrying a demo book all declared it. The
+# loader writes it last and creates nothing, so the first real load would have exited on
+# `table mkt_nba.book_manifest does not exist` before writing a row, and the contract test
+# could not see it because it iterated this repository's own tables rather than the set the
+# loader writes. It now iterates `BOOK.load_order()`, which is that set.
+resource "google_bigquery_table" "book_manifest" {
+  dataset_id          = google_bigquery_dataset.nba_features.dataset_id
+  table_id            = "book_manifest"
+  project             = var.project_id
+  deletion_protection = false
+
+  schema = jsonencode([
+    { name = "book_version", type = "STRING", mode = "REQUIRED" },
+    { name = "as_of_date", type = "DATE", mode = "REQUIRED" },
+    { name = "fictional", type = "BOOLEAN", mode = "REQUIRED" },
+    { name = "loaded_at", type = "TIMESTAMP", mode = "NULLABLE" },
+    { name = "source_commit", type = "STRING", mode = "NULLABLE" },
+    { name = "tenant", type = "STRING", mode = "REQUIRED" },
+  ])
+}

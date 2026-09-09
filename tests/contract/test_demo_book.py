@@ -123,9 +123,16 @@ def test_the_managed_adapter_reads_only_columns_the_terraform_declares() -> None
 
 
 def test_the_book_and_the_terraform_declare_the_same_columns() -> None:
-    """One book, one schema. A column in one and not the other is a load that fails."""
+    """One book, one schema. A column in one and not the other is a load that fails.
+
+    The set checked is ``load_order()`` rather than ``TABLES``, so it includes the manifest.
+    The loader writes the manifest like any other table and refuses to write anything at all
+    when a target table is missing (``scripts/load_demo_book.py`` ``_existing``), so a
+    manifest absent from the Terraform is a load that fails before its first row, and
+    iterating the repository's own tables cannot see it.
+    """
     declared = _terraform_tables()
-    for table in demo_book.TABLES:
+    for table in demo_book.BOOK.load_order():
         assert table.name in declared, f"the book ships {table.name} and Terraform does not"
         book_columns, tf_columns = sorted(table.columns), sorted(declared[table.name])
         assert book_columns == tf_columns, (
