@@ -12,11 +12,12 @@ export MKT_NBA_PROFILE=local
 
 | Script | What it does |
 |--------|--------------|
-| `demo.py` | Runs the real recommendation service over six customers, prints a readable trace to stdout, and writes each audit view to `scripts/out/*.json`. Also the end-to-end smoke test for the slice. |
+| `demo.py` | Runs the real recommendation service over six customers, prints a readable trace to stdout, and writes each audit view to `scripts/out/*.json`. Closes with the eval act: the shipped scorers run live, each one is shown going red on its own planted defect, and the gate's limits are printed. Also the end-to-end smoke test for the slice. |
 | `render_recommendation_ui.py` | Dependency-free static HTML renderer: turns one `demo.py` JSON file into a page (ranked recommendations, the suppressed/ineligible panel, citations, the human-review banner). |
 | `demo_server.py` | Static file server (stdlib only) over `scripts/out/`: `--render` renders every `*.json` first, then serves an index linking to each page. `make demo-server`, then open `http://localhost:8711`. Unlike the other D-series demo servers this one has no in-process session or "Next" button; each scenario is its own static page. |
 | `demo_playwright.py` | Headed, presenter-paced Playwright walkthrough: opens the index, clicks through the six customer pages in order on your cue, and spotlights the panel to look at. See [`../DEMO.md`](../DEMO.md) for the two-terminal run. |
-| `demo_selftest.py` | Generates and renders every synthetic recommendation scenario, verifies the complete page set, and runs in `make gate`. |
+| `demo_selftest.py` | Generates and renders every synthetic recommendation scenario, verifies the complete page set, and fails if the eval act put a metric on the slide without showing it fail. Runs in `make gate`. |
+| `render_evals_doc.py` | Regenerates the derived sections of `docs/evals.md` from the rubrics and a real scored run, so the bars and the measured denominators on that page cannot drift. `--check` runs in `make gate`. |
 | `portability_demo.py` | Proves the bounded local profile and portable audit contract without requiring Google Cloud. |
 | `lock.py` | Compiles both lockfiles and puts the header back, because `uv pip compile` REPLACES the output file: it writes its own two-line provenance comment and destroys the `tag = commit` map the pin tests check against. `make lock` runs this rather than uv directly. |
 

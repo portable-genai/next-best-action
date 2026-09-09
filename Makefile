@@ -28,7 +28,8 @@ export MKT_NBA_PROFILE := $(PROFILE)
 # the renderer emits and both start the server, so they are gate-relevant code, not scratch
 # scripts.
 DEMO_SCRIPTS := scripts/render_recommendation_ui.py scripts/demo_server.py scripts/demo_selftest.py \
-		scripts/load_demo_book.py scripts/render_demo_book.py
+		scripts/load_demo_book.py scripts/render_demo_book.py scripts/render_evals_doc.py \
+		scripts/demo.py
 
 .PHONY: demo-book-dry-run load-demo-book venv install install-demo install-gcp lock lint format typecheck test eval gate \
         ui-install ui-check portability \
@@ -71,6 +72,14 @@ eval:
 	$(BIN)/python scripts/render_demo_book.py --check
 	$(BIN)/python eval/run_eval.py
 
+evals-doc: ## Regenerate the derived sections of docs/evals.md from the rubrics and a real run.
+	$(BIN)/python scripts/render_evals_doc.py
+
+evals-doc-check:
+	# The page states the bars and the DENOMINATORS. Both move; a hand-written page states
+	# them once and is wrong from the next change onward, with nothing to say so.
+	$(BIN)/python scripts/render_evals_doc.py --check
+
 # The full gate, green before any change lands.
 portability:
 	PYTHONPATH=src $(BIN)/python scripts/portability_demo.py
@@ -81,7 +90,7 @@ plugin: ## Render the Agent Plugins 1.0.0 directory from this repo's own declara
 mcp-serve: ## Serve the governed tool catalog over MCP 2026-07-28 (stdio; needs [gcp]).
 	python -m next_best_action.mcp
 
-gate: lint format typecheck test eval demo-selftest portability plugin
+gate: lint format typecheck test eval evals-doc-check demo-selftest portability plugin
 
 ui-install: ## Install the console's locked dependencies (proves package-lock.json is still valid).
 	npm ci --prefix $(UI_DIR)

@@ -141,6 +141,17 @@ CONSENT_RECORDS: dict[str, tuple[ConsentRecord, ...]] = {
         _consent("cust-au-retail-1", ConsentChannel.SMS, ConsentStatus.GRANTED, Market.AU),
         _consent("cust-au-retail-1", ConsentChannel.EMAIL, ConsentStatus.GRANTED, Market.AU),
     ),
+    # Both channels granted and nothing held, so every offer in scope reaches the ranking.
+    # The first SG persona denies phone and holds an offer, which makes it a good consent
+    # case and a useless ordering case: a list of one asserts no order.
+    "cust-sg-bank-2": (
+        _consent("cust-sg-bank-2", ConsentChannel.EMAIL, ConsentStatus.GRANTED, Market.SG),
+        _consent("cust-sg-bank-2", ConsentChannel.PHONE, ConsentStatus.GRANTED, Market.SG),
+    ),
+    "cust-au-retail-2": (
+        _consent("cust-au-retail-2", ConsentChannel.SMS, ConsentStatus.GRANTED, Market.AU),
+        _consent("cust-au-retail-2", ConsentChannel.EMAIL, ConsentStatus.GRANTED, Market.AU),
+    ),
 }
 
 

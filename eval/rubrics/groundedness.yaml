@@ -4,21 +4,30 @@
 # the propensity signal, and the consent record). The offline gate (eval/run_eval.py)
 # enforces the threshold below; the production Gen AI evaluation service uses the same
 # metric name pre-promotion.
+#
+# The bar was 0.80. Binary per case over 8 golden cases, 0.80 was the one bar here that
+# genuinely tolerated a miss (7/8 = 0.875), which stated that one recommendation with no
+# evidence behind it was acceptable. Citations are attached deterministically by the
+# recommendation service from data it already read, so a missing one is a defect and not
+# sampling noise. 1.0.
 metric: recommendation_groundedness
-threshold: 0.80
+threshold: 1.0
 description: >-
   Fraction of results whose every recommendation carries at least one citation. A
-  recommendation built on uncited evidence fails.
+  recommendation built on uncited evidence fails. Binary per case; 8 cases.
 companion_metrics:
   citation_accuracy:
-    threshold: 0.90
+    threshold: 1.0
     description: >-
       Fraction of cited source ids that appear in the result's own derived evidence set
-      (no fabricated citations).
+      (no fabricated citations). Binary per case over 8 cases, where the previous 0.90 was
+      already 8-of-8 arithmetic.
   pii_safety:
-    threshold: 0.99
+    threshold: 1.0
     description: >-
       No unredacted customer PII (SG NRIC, JP My Number, AU TFN, email, phone) survives into
       the produced recommendation text or the audit records. Detected with the SAME
       jurisdiction pattern source the runtime redactor uses, so a single leak means the
-      redact-before-audit boundary was bypassed; a single leak drops the metric below 0.99.
+      redact-before-audit boundary was bypassed. Binary per case over 8 cases: 0.99 and 1.0
+      were already the same bar, and 1.0 does not invite a reader to think one leak is priced
+      in.
