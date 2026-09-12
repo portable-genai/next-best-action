@@ -121,6 +121,13 @@ dataset.
 **The loader truncates, so it refuses a book it did not write.** It proceeds only when the
 target tables are empty or `book_manifest` says what they hold is fictional.
 
+**It loads into the schema each table already has, rather than replacing it.** A truncating load
+with no schema autodetects one from the rows: every mode relaxes to NULLABLE and the columns come
+out in the order the JSON serialised them. Nothing fails at the time, and the next
+`terraform plan` then reports every loaded table as `must be replaced` -- BigQuery cannot narrow a
+mode in place -- and a replaced table holds no rows. The loader passes each table's declared
+schema, so a row that does not fit `infra/terraform/bigquery.tf` fails its own load instead.
+
 **Every candidate offer needs a propensity signal.** The managed adapter refuses to
 recommend an offer nothing has scored, rather than ranking it on a default. The book ships
 one signal per customer and offer in scope, and the contract test fails if one goes missing.
