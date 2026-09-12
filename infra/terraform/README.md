@@ -65,7 +65,11 @@ carries a citation") plus the residency posture stated in `README.md`.
    disable-SA-keys, no-external-IP, uniform-bucket-access.
 3. Managed-first, minimal surface : `apis.tf` enables only the services used; Cloud Run
    ingress is internal + load balancer, not the open internet.
-4. CMEK does not cascade : one regional key, an explicit IAM binding per service agent.
+4. CMEK does not cascade : one regional key, an explicit IAM binding per service agent, and
+   the key named again on every `google_bigquery_table` rather than inherited from the dataset.
+   BigQuery stamps the dataset default onto each table it creates, so a table that declares no
+   `encryption_configuration` reads as a key REMOVAL at the next plan, and removing one REPLACES
+   the table, which destroys every row it holds.
 5. VPC-SC perimeter, dry-run first : `vpc_sc_dry_run = true` by default; watch the audit logs,
    then set it false to enforce.
 6. WORM audit logs : a locked Cloud Logging bucket (~7-year retention); the app redacts before
