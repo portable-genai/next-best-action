@@ -46,10 +46,9 @@ resource "google_logging_project_sink" "audit_to_worm" {
 
   destination = "logging.googleapis.com/${google_logging_project_bucket_config.worm_audit.id}"
 
-  # Capture this app's audit log + all Cloud Audit Logs (admin / data access).
+  # Capture this app's audit log only. Cloud Audit Logs are NOT copied here: _Default already keeps them.
   filter = <<-EOT
     logName="projects/${var.project_id}/logs/next-best-action-audit"
-    OR logName:"cloudaudit.googleapis.com"
   EOT
 
   unique_writer_identity = true
