@@ -20,8 +20,11 @@ resource "google_storage_bucket" "agent_staging" {
   uniform_bucket_level_access = true
   force_destroy               = false
 
-  encryption {
-    default_kms_key_name = google_kms_crypto_key.nba.id # CMEK
+  dynamic "encryption" {
+    for_each = var.cmek_enabled ? [1] : []
+    content {
+      default_kms_key_name = one(google_kms_crypto_key.nba[*].id) # CMEK
+    }
   }
 
   depends_on = [

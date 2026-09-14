@@ -16,7 +16,7 @@ output "region" {
 # --------------------------------- KMS -------------------------------------- #
 output "cmek_key" {
   description = "Regional CMEK crypto key id (protects BigQuery, logs, Cloud Run, staging)."
-  value       = google_kms_crypto_key.nba.id
+  value       = one(google_kms_crypto_key.nba[*].id)
 }
 
 # ------------------------------- BigQuery ----------------------------------- #
