@@ -25,7 +25,7 @@ resource "google_cloud_run_v2_service" "nba" {
   template {
     # Encrypt the revision with the regional CMEK key (CMEK does not cascade : kms.tf binds
     # the Cloud Run service agent).
-    encryption_key                   = google_kms_crypto_key.nba.id
+    encryption_key                   = one(google_kms_crypto_key.nba[*].id)
     service_account                  = google_service_account.runtime.email
     max_instance_request_concurrency = 80
 
