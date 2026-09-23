@@ -16,6 +16,11 @@ zone            = "asia-southeast1-a"
 # ~7-year WORM retention for the audit log. Bucket lock is irreversible.
 retention_days = 2557
 
+# The WORM lock has NO default: a plan refuses until it is stated here. true is the compliant
+# production form and is IRREVERSIBLE for the retention window; an evaluation stack that must
+# stay destroyable states false (NOT compliant).
+worm_locked = true
+
 # Org / Access Context Manager. access_policy_id is the numeric policy id.
 org_id           = "123456789012"
 billing_account  = "01ABCD-2345EF-67890A"
