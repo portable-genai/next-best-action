@@ -59,7 +59,7 @@ the perimeter name must exactly match `marketing-compliance-gate`'s inputs.
 
 ```bash
 # 1. Provision infra (review the plan; the WORM bucket lock is irreversible when
-#    locked = true, the default).
+#    worm_locked = true; it has no default, so state it).
 cd infra/terraform
 cp terraform.tfvars.example terraform.tfvars   # set project_id, org_id, access_policy_id
 terraform init -input=false && terraform plan
@@ -83,7 +83,7 @@ make run-api PROFILE=gcp          # FastAPI on :8104 (front with the platform in
 ```
 
 For a quick project-scoped evaluation WITHOUT org-level prerequisites, set `enable_vpc_sc =
-false` and the audit bucket `locked = false` so everything stays deletable (not compliant for
+false` and the audit bucket `worm_locked = false` so everything stays deletable (not compliant for
 production, and never with real customer data). See `infra/terraform/terraform.tfvars.example`
 and `infra/terraform/README.md`.
 
@@ -152,8 +152,8 @@ region at load, so a mismatched deploy fails fast on both sides.
 
 The CMEK crypto key (`kms.tf`) rotates on schedule; rotation is transparent to the app. The
 audit bucket retention is `retention_days` (default 2557, ~7 years) and the bucket is
-`locked = true` by default, which is **irreversible**. To trial without locking, set
-`locked = false` (not compliant for production). Only redacted prompts / responses are ever
+locked by `worm_locked = true` (no default), which is **irreversible**. To trial without locking, set
+`worm_locked = false` (not compliant for production). Only redacted prompts / responses are ever
 written to the audit log (P-04, R1).
 
 ## 6. Kill switch

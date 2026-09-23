@@ -146,7 +146,7 @@ terraform validate
 
 ## Warnings
 
-- Locking the WORM bucket (`locked = true`) is IRREVERSIBLE. Confirm `retention_days` first.
+- Locking the WORM bucket (`worm_locked = true`, never defaulted) is IRREVERSIBLE. Confirm `retention_days` first.
 - The CMEK key has `prevent_destroy = true`: a destroyed key strands all encrypted data.
 - No secrets live in this directory. `terraform.tfvars` (your real ids) is git-ignored; only
   the fictional `terraform.tfvars.example` is committed. The `marketing-compliance-gate` URL and custom audience
