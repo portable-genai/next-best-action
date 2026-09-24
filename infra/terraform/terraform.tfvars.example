@@ -52,3 +52,11 @@ consent_store_audience = "https://mkt6-consent.internal.example"
 
 # Wire a real channel id in prod so posture alerts page someone.
 alert_notification_channels = []
+
+# Cheap runtime controls stay on in the reference; say so rather than inheriting the default.
+guardrail_enabled      = true
+pii_redaction_enabled  = true
+review_routing_enabled = true
+# Rule R8: the human-review-console every escalated set is routed to. Required while routing is
+# on (the service refuses to boot without it); state "" only with review_routing_enabled = false.
+human_review_url = "https://human-review-console-abc123-as.a.run.app"

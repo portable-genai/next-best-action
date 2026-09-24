@@ -13,7 +13,9 @@ the per-market profiles (config + seed), never a hard-coded branch.
 
 from __future__ import annotations
 
+import functools
 import importlib
+import logging
 import os
 import re
 from collections.abc import Iterable, Mapping
@@ -27,7 +29,7 @@ from hex_service_kit.netdefaults import ConfiguredEmptyError, EnvSetting, read_e
 from pii_kit.patterns import NATIONAL_ID_PATTERNS
 
 from .domain.models import MARKET_PROFILES, Market, MarketProfile, Vertical
-from .envread import setting_or_default
+from .envread import boolean_setting, optional_setting, setting_or_default
 from .ports.identity import CLIENT_ASSERTED, declared_end_user_auth
 
 _ENV_PATTERN = re.compile(r"\$\{([A-Z0-9_]+)(?::-(.*?))?\}")
@@ -64,6 +66,11 @@ def _validate_profile(profile: str) -> str:
 
 #: Profiles that mean "running on managed cloud infrastructure", for the banner's runtime half.
 _MANAGED_PROFILES: frozenset[str] = frozenset({"gcp"})
+
+#: Profiles whose review router and guardrail make real network calls, so a control that is on
+#: must be configured before the process serves. Wider than :data:`_MANAGED_PROFILES`, which
+#: answers only the banner's runtime half: ``platform`` binds the same ``PlatformReviewRouter``.
+_NETWORKED_PROFILES: frozenset[str] = frozenset({"gcp", "platform"})
 
 #: The port whose ACTIVE binding decides what the provenance banner's model half says.
 #: Named once here so rebinding it for a profile changes the banner in the same edit.
@@ -336,6 +343,46 @@ class KnowledgeBaseSettings:
     top_k: int = 10
 
 
+#: The environment variables that switch each cheap runtime control, read in three states:
+#: unset is ON (the reference posture keeps cheap controls on), a boolean value wins, and an
+#: emptied or unrecognised value refuses at boot. See the fleet's runtime-control contract.
+GUARDRAIL_ENV = "MKT_NBA_GUARDRAIL"
+PII_REDACTION_ENV = "MKT_NBA_PII_REDACTION"
+REVIEW_ROUTING_ENV = "MKT_NBA_REVIEW_ROUTING"
+#: The human-review-console base URL the review router submits to. Required at boot under a
+#: networked profile while review routing is on, so a missing console is a named refusal
+#: rather than a hand-off that fails on every escalation.
+HUMAN_REVIEW_URL_ENV = "HUMAN_REVIEW_URL"
+
+_log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class ControlSwitches:
+    """Which cheap runtime controls this process runs. Every one defaults on."""
+
+    guardrail: bool = True
+    pii_redaction: bool = True
+    review_routing: bool = True
+
+    @classmethod
+    def from_env(cls) -> ControlSwitches:
+        return cls(
+            guardrail=boolean_setting(GUARDRAIL_ENV, default=True),
+            pii_redaction=boolean_setting(PII_REDACTION_ENV, default=True),
+            review_routing=boolean_setting(REVIEW_ROUTING_ENV, default=True),
+        )
+
+    def switched_off(self) -> tuple[str, ...]:
+        """The environment variables of every control that is off, for the startup warning."""
+        states = (
+            (GUARDRAIL_ENV, self.guardrail),
+            (PII_REDACTION_ENV, self.pii_redaction),
+            (REVIEW_ROUTING_ENV, self.review_routing),
+        )
+        return tuple(name for name, on in states if not on)
+
+
 @dataclass(frozen=True)
 class ModelArmorSettings:
     template_id: str = "mkt-nba-guardrail"
@@ -421,6 +468,8 @@ class Settings:
     ranking: RankingSettings = field(default_factory=RankingSettings)
     local: LocalSettings = field(default_factory=LocalSettings)
     pii: PiiSettings = field(default_factory=PiiSettings)
+    #: Which cheap runtime controls run; see :class:`ControlSwitches`.
+    controls: ControlSwitches = field(default_factory=ControlSwitches)
     # Per-market residency overrides keyed by market code, e.g. {"JP": {"region": "..."}}.
     markets: dict[str, MarketOverride] = field(default_factory=dict)
     # port_name -> { profile -> "module.path:ClassName" }
@@ -514,16 +563,22 @@ class Settings:
         market = setting_or_default("MKT_MARKET", str(raw.pop("market", "SG")))
         # ``profile_explicit`` is derived, never read from the settings file: a file that could
         # assert "the profile was chosen" would reopen the fail-open from the other side.
-        known = {f for f in Settings.__dataclass_fields__ if f not in nested} - {"profile_explicit"}
+        known = {f for f in Settings.__dataclass_fields__ if f not in nested} - {
+            "profile_explicit",
+            "controls",
+        }
         flat: dict[str, Any] = {k: v for k, v in raw.items() if k in known}
-        return Settings(
+        settings = Settings(
             profile=choice.profile,
             profile_explicit=choice.explicit,
             vertical=vertical,
             market=market,
+            controls=ControlSwitches.from_env(),
             **flat,
             **nested,
         )
+        _refuse_unconfigured_controls(settings)
+        return settings
 
     @property
     def runtime(self) -> str:
@@ -583,6 +638,36 @@ class Settings:
         return "managed-not-implemented"
 
 
+def _refuse_unconfigured_controls(settings: Settings) -> None:
+    """A control that is on under a networked profile must be able to work, checked at boot.
+
+    Review routing on with no console named used to fail every hand-off silently, one
+    escalation at a time, behind the domain's best-effort ``suppress``; the Model Armor
+    guardrail on with no template would build a malformed URL at the first request. Both are
+    configuration errors, so both refuse here and say how to either configure the control or
+    switch it off out loud.
+    """
+    if settings.profile not in _NETWORKED_PROFILES:
+        return
+    controls = settings.controls
+    if controls.review_routing and optional_setting(HUMAN_REVIEW_URL_ENV) is None:
+        raise ConfiguredEmptyError(
+            f"Review routing is on under profile {settings.profile!r} but {HUMAN_REVIEW_URL_ENV} "
+            f"is not set. Name the human-review-console base URL, or set "
+            f"{REVIEW_ROUTING_ENV}=off to run without routing."
+        )
+    guardrail_binding = str((settings.adapters.get("guardrail") or {}).get(settings.profile, ""))
+    if (
+        controls.guardrail
+        and "model_armor" in guardrail_binding
+        and not settings.model_armor.template_id.strip()
+    ):
+        raise ConfiguredEmptyError(
+            f"The guardrail is on under profile {settings.profile!r} but no Model Armor "
+            f"template is configured. Name one, or set {GUARDRAIL_ENV}=off."
+        )
+
+
 def instantiate(dotted: str, settings: Settings) -> Any:
     """Import ``module.path:ClassName`` and construct it with ``settings``."""
     module_path, _, class_name = dotted.partition(":")
@@ -626,10 +711,18 @@ class Container:
 
     @cached_property
     def guardrail(self) -> Any:
+        if not self.settings.controls.guardrail:
+            from .adapters.controls import DisabledGuardrail
+
+            return DisabledGuardrail(self.settings)
         return self._bind("guardrail")
 
     @cached_property
     def redaction(self) -> Any:
+        if not self.settings.controls.pii_redaction:
+            from .adapters.controls import DisabledRedaction
+
+            return DisabledRedaction(self.settings)
         return self._bind("redaction")
 
     @cached_property
@@ -658,6 +751,10 @@ class Container:
 
     @cached_property
     def review_router(self) -> Any:
+        if not self.settings.controls.review_routing:
+            from .adapters.controls import DisabledReviewRouter
+
+            return DisabledReviewRouter(self.settings)
         return self._bind("review_router")
 
     @cached_property
@@ -665,8 +762,23 @@ class Container:
         return self._bind("consent")
 
 
+@functools.cache
+def warn_switched_off(switched_off: tuple[str, ...]) -> None:
+    """Log a switched-off posture once per process, however many containers are built.
+
+    The agent tool and the MCP handlers build a container per call, so a warning in
+    :func:`build_container` itself would repeat on every call and drown the one line an
+    operator needs to see.
+    """
+    _log.warning("runtime controls switched off: %s", ", ".join(switched_off))
+
+
 def build_container(settings: Settings | None = None) -> Container:
-    return Container(settings or Settings.load())
+    settings = settings or Settings.load()
+    switched_off = settings.controls.switched_off()
+    if switched_off:
+        warn_switched_off(switched_off)
+    return Container(settings)
 
 
 def identity_adapter_class(settings: Settings) -> type:

@@ -299,13 +299,15 @@ def _to_request(body: RecommendRequestModel) -> RecommendationRequest:
 
 
 @app.post("/v1/recommend")
-def recommend(body: RecommendRequestModel, principal: CurrentPrincipal) -> dict:
+def recommend(
+    body: RecommendRequestModel, principal: CurrentPrincipal, routing: deps.RequestReviewRouter
+) -> dict:
     try:
         request = _to_request(body)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     try:
-        result = make_recommendation_service().recommend(request, principal)
+        result = make_recommendation_service(review_router=routing).recommend(request, principal)
     except AuthorizationError as exc:
         # Fail-closed object authorization: the verified principal's tenant is not entitled
         # to this customer (cross-tenant object reference). Never a 404 (which would confirm
@@ -319,4 +321,7 @@ def recommend(body: RecommendRequestModel, principal: CurrentPrincipal) -> dict:
         raise HTTPException(status_code=404, detail=f"no candidate offers: {exc}") from exc
     except NotImplementedError as exc:
         raise HTTPException(status_code=501, detail=str(exc)) from exc
-    return to_jsonable(result)
+    payload: dict = to_jsonable(result)
+    # What happened to the human-review hand-off: routed, failed, off or not_required.
+    payload["review_routing"] = routing.outcome.value
+    return payload

@@ -29,6 +29,11 @@ from pii_kit.patterns import Pattern
 from ...config import Settings
 from ...domain.models import RedactionFinding, RedactionResult
 
+# An eight-digit run after a currency marker is an amount, not a phone number: "a deposit of
+# AUD 90000000" used to reach the audit trail as "AUD [SG_PHONE]". The shared phone rows cannot
+# see the currency, so this redactor looks behind a phone match before masking it.
+_AMOUNT_PREFIX = re.compile(r"(?:[$€£¥]|\b(?:SGD|USD|HKD|AUD|JPY|EUR|GBP|CNY))\s?$")
+
 
 class LocalRegexRedactionAdapter:
     """Mask the configured jurisdictions' national ids + email/phone, like DLP de-identify."""
@@ -65,6 +70,8 @@ class LocalRegexRedactionAdapter:
             ) -> str:
                 if _val is not None and not _val(m.group(0)):
                     return m.group(0)  # checksum fail: not a real identifier, leave it intact
+                if "PHONE" in _it and _AMOUNT_PREFIX.search(m.string, 0, m.start()):
+                    return m.group(0)  # an amount after a currency marker, not a phone number
                 counts[_it] = counts.get(_it, 0) + 1
                 return f"[{_it}]"
 

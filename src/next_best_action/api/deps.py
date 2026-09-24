@@ -7,7 +7,11 @@ the domain orchestrator, so the CLI, API and agent layers share identical wiring
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Annotated, Any
 
+from fastapi import Depends
+
+from ..adapters.controls import RecordingReviewRouter
 from ..config import Container, build_container
 from ..domain.candidate_service import CandidateFilterService
 from ..domain.eligibility_service import EligibilityService
@@ -20,7 +24,20 @@ def get_container() -> Container:
     return build_container()
 
 
-def make_recommendation_service(container: Container | None = None) -> RecommendationService:
+def get_request_review_router() -> RecordingReviewRouter:
+    """The review router for ONE request, wrapped so the response reports the hand-off."""
+    return RecordingReviewRouter(get_container().review_router)
+
+
+#: Injected by FastAPI once per request, so the route reads the outcome of the same wrapper
+#: its service handed the set to.
+RequestReviewRouter = Annotated[RecordingReviewRouter, Depends(get_request_review_router)]
+
+
+def make_recommendation_service(
+    container: Container | None = None, *, review_router: Any = None
+) -> RecommendationService:
+    """Build the orchestrator; ``review_router`` is a caller's recording wrapper, if it has one."""
     container = container or get_container()
     ranking_cfg = container.settings.ranking
     return RecommendationService(
@@ -41,5 +58,5 @@ def make_recommendation_service(container: Container | None = None) -> Recommend
         ),
         # Rule R8: route a requires_human_review set to the human-review-console maker-checker
         # console.
-        review_router=container.review_router,
+        review_router=review_router or container.review_router,
     )

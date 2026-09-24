@@ -68,8 +68,10 @@ def recommend_next_best_action(
         (ignored by the verified IAP adapters). Never a security control.
 
     Returns:
-      A JSON-safe ``RecommendationSet`` dict.
+      A JSON-safe ``RecommendationSet`` dict, plus ``review_routing``: what happened to the
+      human-review hand-off (``routed``, ``failed``, ``off`` or ``not_required``).
     """
+    from ..adapters.controls import RecordingReviewRouter
     from ..api.deps import make_recommendation_service
     from ..domain.identity import RequestContext
     from ..domain.models import ConsentChannel, Market, RecommendationRequest, Vertical
@@ -85,7 +87,12 @@ def recommend_next_best_action(
         max_recommendations=max_recommendations,
         channel=ConsentChannel(channel) if channel else None,
     )
-    return to_jsonable(make_recommendation_service(c).recommend(request, principal))
+    routing = RecordingReviewRouter(c.review_router)
+    result = make_recommendation_service(c, review_router=routing).recommend(request, principal)
+    payload: dict[str, Any] = to_jsonable(result)
+    # What happened to the human-review hand-off: routed, failed, off or not_required.
+    payload["review_routing"] = routing.outcome.value
+    return payload
 
 
 TOOL_FUNCTIONS = (recommend_next_best_action,)

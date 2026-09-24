@@ -87,6 +87,30 @@ resource "google_cloud_run_v2_service" "nba" {
         value = var.consent_store_audience
       }
 
+      # The cheap runtime controls, stated rather than inherited: each is on in the reference,
+      # and off is a deployment choice the service logs at startup.
+      env {
+        name  = "MKT_NBA_GUARDRAIL"
+        value = tostring(var.guardrail_enabled)
+      }
+      env {
+        name  = "MKT_NBA_PII_REDACTION"
+        value = tostring(var.pii_redaction_enabled)
+      }
+      env {
+        name  = "MKT_NBA_REVIEW_ROUTING"
+        value = tostring(var.review_routing_enabled)
+      }
+      # Rule R8: the console an escalation is routed to. Set only when it carries a value: the
+      # service reads it in three states, and an emptied variable is a refusal, not an absence.
+      dynamic "env" {
+        for_each = var.human_review_url == "" ? [] : [var.human_review_url]
+        content {
+          name  = "HUMAN_REVIEW_URL"
+          value = env.value
+        }
+      }
+
       startup_probe {
         http_get {
           path = "/healthz"
