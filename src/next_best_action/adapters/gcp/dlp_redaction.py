@@ -6,7 +6,7 @@ model input and audit record is de-identified at the boundary first, so PII is m
 the model (P-04). The call is regional (``projects/{project}/locations/{region}``) to keep
 inspection inside the configured residency boundary (JP / AU / SG).
 
-The inline inspect/de-identify configuration is jurisdiction-driven: it masks universal
+The inline inspect/de-identify configuration is jurisdiction-driven: it replaces universal
 info types (name, email, phone, passport, card) plus the national identifiers configured in
 ``settings.pii.jurisdictions`` (NRIC, My Number, TFN, ...) sourced from
 ``domain/pii_patterns.py``, so the managed and local redactors detect the same identifiers.
@@ -41,7 +41,21 @@ _DEFAULT_INFO_TYPES: tuple[str, ...] = (
     "IBAN_CODE",
 )
 
-_MASKING_CHAR = "#"
+# Tuned against false positives (runtime-control contract, 2026-09-24). What this adapter
+# redacts is offer and policy text, customer attributes and the recommendation summary, and at
+# POSSIBLE likelihood DLP could take an offer or brand name ("Sakura Salary Account", "Merlion
+# Rewards") or a regulator for a person and mask it. Three changes: only LIKELY findings are
+# masked; a match is REPLACED with its info-type name rather than a run of mask characters, so
+# the text keeps its shape; and a PERSON_NAME finding containing this domain's own vocabulary
+# (regulators and marketing law, product words, the demo book's brand stems) is excluded.
+_MIN_LIKELIHOOD = "LIKELY"
+_DOMAIN_VOCABULARY_REGEX = (
+    r"(?i)\b(MAS|APRA|ASIC|AUSTRAC|JFSA|FSA|PDPC|PDPA|APPI|DNC|Spam Act|Privacy Act|"
+    r"Account|Card|Loan|Deposit|Wallet|Rewards?|Loyalty|Wealth|Savings|SavingsPlus|Mortgage|"
+    r"Offset|Subscription|Bundle|Pass|Kit|Box|Delivery|Club|Prime|Premium|Priority|Gold|"
+    r"Platinum|Upgrade|Merlion|Sakura|Hanami|Midori|MidoriMart|Kopitiam|Outback|Southern Cross|"
+    r"Boomerang|BoomerangBuy|Bushwalk|Trailblazer|FICTIONAL)\b"
+)
 
 
 class DlpRedactionAdapter:
@@ -100,7 +114,9 @@ class DlpRedactionAdapter:
             {
                 "info_type": {"name": name},
                 "regex": {"pattern": "|".join(f"(?:{p})" for p in patterns)},
-                "likelihood": "POSSIBLE",
+                # The pattern is specific enough to be a finding in its own right; it must
+                # clear the LIKELY floor below or no national identifier would be masked.
+                "likelihood": "VERY_LIKELY",
             }
             for name, patterns in by_name.items()
         ]
@@ -110,7 +126,20 @@ class DlpRedactionAdapter:
         return {
             "info_types": [{"name": name} for name in _DEFAULT_INFO_TYPES],
             "custom_info_types": self._custom_info_types(),
-            "min_likelihood": "POSSIBLE",
+            "rule_set": [
+                {
+                    "info_types": [{"name": "PERSON_NAME"}],
+                    "rules": [
+                        {
+                            "exclusion_rule": {
+                                "regex": {"pattern": _DOMAIN_VOCABULARY_REGEX},
+                                "matching_type": "MATCHING_TYPE_PARTIAL_MATCH",
+                            }
+                        }
+                    ],
+                }
+            ],
+            "min_likelihood": _MIN_LIKELIHOOD,
             "include_quote": False,
         }
 
@@ -124,9 +153,9 @@ class DlpRedactionAdapter:
                 "transformations": [
                     {
                         "info_types": all_info_types,
-                        "primitive_transformation": {
-                            "character_mask_config": {"masking_character": _MASKING_CHAR}
-                        },
+                        # Replace with the info-type name, e.g. "[PERSON_NAME]": irreversible,
+                        # and the text still reads as a sentence.
+                        "primitive_transformation": {"replace_with_info_type_config": {}},
                     }
                 ]
             }

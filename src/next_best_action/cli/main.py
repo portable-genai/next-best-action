@@ -96,6 +96,22 @@ def _echo_review_banner(requires_review: bool) -> None:
         )
 
 
+#: The human-review hand-off outcome in plain words, as the console states it.
+_REVIEW_ROUTING_TEXT = {
+    "routed": "Sent to the review console.",
+    "failed": "Could not reach the review console; this set is not queued for review.",
+    "off": "Review routing is off in this deployment; this set is not queued for review.",
+    "not_required": "Human review was not required, so nothing was routed.",
+}
+
+
+def _echo_review_routing(outcome: str) -> None:
+    typer.secho(
+        f"\n  Review routing: {outcome} ({_REVIEW_ROUTING_TEXT[outcome]})",
+        fg=typer.colors.GREEN if outcome == "routed" else typer.colors.YELLOW,
+    )
+
+
 def _echo_result(result: RecommendationSet) -> None:
     typer.secho(f"\nNEXT-BEST-ACTION: customer {result.customer_id}", bold=True)
     typer.echo(f"  id        : {result.id}")
@@ -151,7 +167,8 @@ def recommend(
     ),
 ) -> None:
     """Produce ranked, cited next-best-action recommendations for a customer."""
-    from ..api.deps import make_recommendation_service
+    from ..adapters.controls import RecordingReviewRouter
+    from ..api.deps import get_container, make_recommendation_service
     from ..domain.identity import Principal
     from ..domain.models import ConsentChannel, Market, RecommendationRequest, Vertical
 
@@ -160,7 +177,12 @@ def recommend(
     # call takes a verified Principal, never a free-text actor string.
     principal = Principal(subject=_CLI_ACTOR, tenant="demo-bank", source="cli")
 
+    routing: RecordingReviewRouter | None = None
+
     def go() -> RecommendationSet:
+        nonlocal routing
+        container = get_container()
+        routing = RecordingReviewRouter(container.review_router)
         request = RecommendationRequest(
             customer_id=customer_id,
             market=Market(market),
@@ -168,10 +190,14 @@ def recommend(
             max_recommendations=max_recommendations,
             channel=ConsentChannel(channel) if channel else None,
         )
-        return make_recommendation_service().recommend(request, principal)
+        return make_recommendation_service(container, review_router=routing).recommend(
+            request, principal
+        )
 
     result = _run("recommend", go)
     _echo_result(result)
+    if routing is not None:
+        _echo_review_routing(routing.outcome.value)
 
 
 @app.command("eligibility")

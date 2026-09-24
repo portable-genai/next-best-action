@@ -48,6 +48,9 @@ export interface Recommendation {
   citations: Citation[];
 }
 
+/** What happened to the human-review hand-off for one response. */
+export type ReviewRouting = "routed" | "failed" | "off" | "not_required";
+
 export interface RecommendationSet {
   id: string;
   customer_id: string;
@@ -59,6 +62,8 @@ export interface RecommendationSet {
   summary: string;
   citations: Citation[];
   requires_human_review: boolean;
+  /** What happened to the hand-off to the review console, as the API reports it. */
+  review_routing?: ReviewRouting;
 }
 
 export interface Health {

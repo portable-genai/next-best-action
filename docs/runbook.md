@@ -78,6 +78,7 @@ pip install -e ".[gcp,dev]"
 export GOOGLE_CLOUD_PROJECT=your-sg-project MKT_NBA_PROFILE=gcp
 export MKT_CONSENT_STORE_URL=https://mkt6.example.internal
 export MKT_CONSENT_STORE_AUDIENCE=https://mkt6-consent.internal.example
+export HUMAN_REVIEW_URL=https://human-review-console.example.internal   # required: routing is on
 gcloud auth application-default login
 make run-api PROFILE=gcp          # FastAPI on :8104 (front with the platform ingress)
 ```
@@ -138,7 +139,12 @@ Customer PII is redacted before any model / span / audit call (P-04, R1). The
 national-identifier detectors come from the shared, versioned `pii-kit`
 (`adapters/gcp/dlp_redaction.py`), so switching markets switches the detectors: confirm the
 `pii-kit` rows for the active market are the ones you intend to scrub and gate on. The DLP
-inspect / de-identify templates are region-pinned like every other resource.
+call is region-pinned like every other resource (`projects/<p>/locations/<region>`), and its
+inline inspect config is tuned against false positives: only `LIKELY` findings are replaced,
+each with its info-type name (`[PERSON_NAME]`) rather than a run of mask characters, and a
+`PERSON_NAME` finding containing this domain's vocabulary (regulators, offer and product words,
+the demo book's brand names) is excluded. The local redactor leaves an eight-digit amount after
+a currency marker (`AUD 90000000`) alone rather than masking it as a phone number.
 
 ## 4. Region selection and fail-fast
 
@@ -162,6 +168,20 @@ To stop serving without tearing down state: scale the Cloud Run / Agent Runtime 
 zero, or remove the app service account's `roles/aiplatform.user` binding. The audit trail
 remains intact.
 
+**Runtime controls.** `MKT_NBA_GUARDRAIL`, `MKT_NBA_PII_REDACTION` and `MKT_NBA_REVIEW_ROUTING`
+each switch one cheap control (Terraform: `guardrail_enabled`, `pii_redaction_enabled`,
+`review_routing_enabled`, all default `true`). Each is read in three states: unset is on,
+`true`/`false` (or `on`/`off`) wins, and an emptied or unrecognised value refuses at boot. A
+process with any of them off logs one warning at startup naming each.
+
+- **Pause escalations:** set `MKT_NBA_REVIEW_ROUTING=off`. The ESCALATED audit rows are still
+  written, and every recommendation response reports `review_routing: "off"`, so the operator
+  is told the set is not queued. Unsetting `HUMAN_REVIEW_URL` does not pause anything: under
+  `gcp` or `platform` with routing on, the process refuses to boot without it.
+- **A failed hand-off** no longer disappears. The recommendation still returns, carries
+  `review_routing: "failed"`, and the service logs a warning with the exception type. The API,
+  the agent tool, the MCP `recommend` tool and the CLI all report it.
+
 ## 7. Common failures
 
 | Symptom | Likely cause | Fix |
@@ -171,6 +191,8 @@ remains intact.
 | `UnknownCustomerError` (HTTP 404) | No such customer in the source | Confirm the `customer_id`, market and vertical |
 | `NoCandidatesError` (HTTP 404) | No eligible, consented offers for the customer | Expected when everything is held / consent-suppressed; check consent and eligibility |
 | Every candidate is consent-suppressed | `marketing-compliance-gate` URL, OIDC audience/caller policy, or decision is unavailable | Check `MKT_CONSENT_STORE_URL`, `MKT_CONSENT_STORE_AUDIENCE`, `marketing-compliance-gate`'s caller allowlist and Cloud Run invoker grant; do not add a local production fallback |
+| Boot refuses: `Review routing is on ... HUMAN_REVIEW_URL is not set` | Managed profile with routing on and no console named | Set `human_review_url` (or `HUMAN_REVIEW_URL`), or state `review_routing_enabled = false` |
+| Boot refuses: `MKT_NBA_... is set to an empty value` | A control switch was rendered empty | Unset it (on) or set `true` / `false` |
 | Guardrail block on a benign request (HTTP 400) | Model Armor template too strict | Tune the `model_armor` template filter confidence levels |
 | `marketing-compliance-gate` returns an ingress 404/403 before app verification | `next-best-action` did not route the `run.app` request through the Shared VPC | Confirm both projects are associated to the same host, the subnet has Private Google Access, and `next-best-action` Direct VPC egress is `ALL_TRAFFIC` |
 | VPC-SC denies the apply or consent hop | Projects are in distinct perimeters, the Shared VPC host is absent, or the runner is outside the perimeter | Confirm `marketing-compliance-gate` solely owns one dry-run perimeter containing host + `next-best-action` + `marketing-compliance-gate`; review dry-run denials before the owner enforces it |

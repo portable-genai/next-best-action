@@ -51,7 +51,9 @@ def build_handlers(actor: str) -> dict[str, mcpserve.Handler]:
         )
 
     def recommend(**arguments: Any) -> Any:
-        from ..api.app import make_recommendation_service
+        from ..adapters.controls import RecordingReviewRouter
+        from ..api.deps import get_container, make_recommendation_service
+        from ..domain.serialization import to_jsonable
 
         market, vertical = _market_vertical(arguments)
         request = RecommendationRequest(
@@ -60,7 +62,15 @@ def build_handlers(actor: str) -> dict[str, mcpserve.Handler]:
             vertical=vertical,
             max_recommendations=int(arguments.get("max_recommendations") or 3),
         )
-        return make_recommendation_service().recommend(request, principal)
+        container = get_container()
+        routing = RecordingReviewRouter(container.review_router)
+        result = make_recommendation_service(container, review_router=routing).recommend(
+            request, principal
+        )
+        payload: dict[str, Any] = to_jsonable(result)
+        # What happened to the human-review hand-off: routed, failed, off or not_required.
+        payload["review_routing"] = routing.outcome.value
+        return payload
 
     return {
         "list_offers": list_offers,

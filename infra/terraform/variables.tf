@@ -257,6 +257,39 @@ variable "consent_store_audience" {
   }
 }
 
+# --------------------------------------------------------------------------- #
+# Cheap runtime controls (the fleet's runtime-control contract). Each is on in the reference,
+# reversible, so each takes a default; the service reads them in three states and logs one
+# warning at startup naming any that is off.
+# --------------------------------------------------------------------------- #
+variable "guardrail_enabled" {
+  description = "Switch the Model Armor input/output guardrail (MKT_NBA_GUARDRAIL)."
+  type        = bool
+  default     = true
+}
+
+variable "pii_redaction_enabled" {
+  description = "Switch DLP PII redaction at the model, trace and audit boundary (MKT_NBA_PII_REDACTION)."
+  type        = bool
+  default     = true
+}
+
+variable "review_routing_enabled" {
+  description = "Switch review routing to the human-review-console (MKT_NBA_REVIEW_ROUTING)."
+  type        = bool
+  default     = true
+}
+
+variable "human_review_url" {
+  description = "Base URL of the human-review-console every escalated recommendation set is routed to (rule R8). Required while review routing is on: the service refuses to boot without it. State \"\" only with review_routing_enabled = false."
+  type        = string
+
+  validation {
+    condition     = !var.review_routing_enabled || can(regex("^https://[^/[:space:]]+", var.human_review_url))
+    error_message = "review_routing_enabled requires human_review_url, an HTTPS human-review-console base URL: the service refuses to boot with routing on and no console named. Name one, or set review_routing_enabled = false."
+  }
+}
+
 variable "alert_notification_channels" {
   description = "Monitoring notification channel ids for the posture alerts (empty = none)."
   type        = list(string)
