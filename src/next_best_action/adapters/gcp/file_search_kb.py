@@ -64,6 +64,14 @@ class FileSearchKnowledgeBaseAdapter:
         file_search = types.Tool(
             file_search=types.FileSearch(file_search_store_names=[self._store_id])
         )
+        # Pinned at temperature 0: this is retrieval, and the passages it returns become the
+        # citations the explanation is checked against, so two runs should retrieve alike.
+        #
+        # Deliberately NOT noted in answer provenance, either half. File Search reads a PRIVATE
+        # store over this repository's own offer and policy corpus, which is not an online
+        # search tool, so the console's Search pill must not light for it. And the model's own
+        # text is discarded here (only the grounding chunks are kept), so this call answers
+        # nothing; the model that writes the explanation notes itself in the llm adapter.
         response = client.models.generate_content(
             model=self._model,
             contents=[types.Content(role="user", parts=[types.Part.from_text(text=query.text)])],

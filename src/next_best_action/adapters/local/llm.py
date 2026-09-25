@@ -6,6 +6,10 @@ emits a deterministic JSON object whose keys match it, including ``used_source_i
 from the ``[source_id p.N]`` headers in the rendered EVIDENCE block, so the explanation
 cites only sources that were actually used. There is no Google emulator for Gemini, so this
 path is unconditional. The LLM never decides the numbers: the deterministic engines do.
+
+Every answer notes :data:`~next_best_action.config.STUB_GENERATOR_MODEL` as the model that
+answered, the same name ``generator_model`` reports under ``local``, so the console's model pill
+names the stub rather than the Gemini id ``response.model`` carries for schema parity.
 """
 
 from __future__ import annotations
@@ -14,7 +18,9 @@ import json
 import re
 from typing import Any
 
-from ...config import Settings
+from hex_service_kit import provenance
+
+from ...config import STUB_GENERATOR_MODEL, Settings
 from ...domain.models import LlmRequest, LlmResponse, TokenUsage
 
 _SOURCE_HEADER_RE = re.compile(r"\[([a-z0-9][a-z0-9\-]*?)(?:\s+p\.[^\]]+)?\]")
@@ -41,6 +47,7 @@ class LocalDeterministicLLMAdapter:
     def generate(self, request: LlmRequest) -> LlmResponse:
         source_ids = self._source_ids_from_request(request)
         body = self._body_for_schema(request.response_schema, source_ids)
+        provenance.note_model(STUB_GENERATOR_MODEL)
         return LlmResponse(
             text=json.dumps(body),
             usage=TokenUsage(input_tokens=96, output_tokens=48, thinking_tokens=24),
@@ -50,6 +57,7 @@ class LocalDeterministicLLMAdapter:
         )
 
     def classify(self, text: str, labels: list[str]) -> str:
+        provenance.note_model(STUB_GENERATOR_MODEL)
         return labels[0] if labels else ""
 
     # ------------------------------------------------------------------ #

@@ -19,7 +19,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from hex_service_kit import cors_allowlist
-from hex_service_kit.web import add_loopback_exposure_guard
+from hex_service_kit.web import add_loopback_exposure_guard, install_answer_provenance
 
 from ..config import Settings, end_user_auth_kind
 from ..domain.errors import (
@@ -199,6 +199,18 @@ async def _security_headers(request: Request, call_next: Any) -> Any:
     if legacy is not None:
         response.headers["X-Frame-Options"] = legacy
     return response
+
+
+# Which model answered, and whether it searched: the model adapters note it as they call
+# (`hex_service_kit.provenance.note_model` / `note_search`; the kit's local-model client notes
+# itself under `live`) and this emits it as `X-Answered-By` / `X-Search-Used` on the same
+# response, with an `Access-Control-Expose-Headers` naming both: the console calls this
+# service directly, cross-origin when standalone, and a cross-origin response hides every
+# header not listed there. The console's pills read those two headers, so what a pill names is
+# what answered, never what configuration says would. A request that noted nothing
+# (`/healthz`, `/v1/personas`) sends neither, and the pill keeps showing the configured
+# `generator_model` from `/healthz`.
+install_answer_provenance(app)
 
 
 # A request arrives with nothing authenticating the END USER unless BOTH of these hold, and

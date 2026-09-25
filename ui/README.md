@@ -49,6 +49,8 @@ Then open http://localhost:3000.
 | `app/` | The App Router pages. `layout.tsx` sets `export const dynamic = "force-dynamic"`, which the nonce CSP requires (see below). |
 | `components/` | The audit-first result view: ranked cited recommendations, suppressed offers, the review banner. |
 | `lib/api.ts`, `lib/types.ts` | The typed client for the `next-best-action` API and the shapes it returns. |
+| `app/ModelPills.tsx` | The two pills at the top right of every page: the model that answered the last request (the configured `generator_model` from `/healthz`, dimmed, until one has), and `Search` when that answer used an online search tool. |
+| `lib/answer-provenance.mjs` | The one `window.fetch` wrapper the pills read the service's `X-Answered-By` / `X-Search-Used` headers through, scoped to `API_BASE`, so no call site reports its own model. Pure, covered by `npm test`. |
 | `lib/csp.mjs` | The Content-Security-Policy, built ONCE. Also `frameAncestors` (three-state, mirroring the backend), `generateNonce` and the build-time `assertHydratableCsp` refusal. |
 | `proxy.ts` | The only emitter of the CSP. Mints a per-request nonce and sets the policy on both the request headers (where Next reads the nonce it stamps) and the response headers (what the browser enforces). |
 | `next.config.mjs` | Base path, and the static-only headers (`nosniff`, `Referrer-Policy`). Emits NO CSP: two layers emitting one would be intersected by the browser and the stricter value would win per directive. |

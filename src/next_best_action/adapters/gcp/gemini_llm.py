@@ -12,6 +12,12 @@ instruction, temperature, max-output-tokens, a :class:`ThinkingConfig` mapped fr
 ``request.thinking``, and structured-output config when a response schema is supplied), and
 maps ``usage_metadata`` back onto :class:`TokenUsage`.
 
+Temperature is sent only when the request pins one: ``None`` leaves it out of the generation
+config, so the model samples at its own default (some models reject the parameter, so free
+means absent, never ``1.0``). After every successful call the adapter notes the model it
+called (``hex_service_kit.provenance.note_model``), which the API emits as ``X-Answered-By`` for
+the console's model pill. No call here attaches an online search tool, so none notes a search.
+
 The residency region is resolved from the active market and **validated** against the
 per-market allow-list, so narration stays inside the configured residency boundary.
 
@@ -22,6 +28,8 @@ this module without ``google-genai`` installed.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+
+from hex_service_kit import provenance
 
 from ...config import Settings
 from ...domain.models import LlmRequest, LlmResponse, ThinkingLevel, TokenUsage
@@ -66,6 +74,7 @@ class GeminiLLMAdapter:
         contents = self._to_contents(request, types)
         config = self._build_config(request, types)
         response = client.models.generate_content(model=model, contents=contents, config=config)
+        provenance.note_model(model)
         return LlmResponse(
             text=getattr(response, "text", "") or "",
             usage=self._map_usage(getattr(response, "usage_metadata", None)),
@@ -73,7 +82,11 @@ class GeminiLLMAdapter:
         )
 
     def classify(self, text: str, labels: list[str]) -> str:
-        """Cheap single-label classification using the triage-tier model."""
+        """Cheap single-label classification using the triage-tier model.
+
+        Pinned at temperature 0: the reply is matched against a fixed label set, so it is
+        compared, not read.
+        """
         from google.genai import types  # noqa: PLC0415
 
         client = self._get_client()
@@ -83,8 +96,9 @@ class GeminiLLMAdapter:
             "Reply with the single label only, no punctuation or explanation.\n\n"
             f"Text:\n{text}"
         )
+        model = self._models.triage
         response = client.models.generate_content(
-            model=self._models.triage,
+            model=model,
             contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
             config=types.GenerateContentConfig(
                 temperature=0.0,
@@ -94,6 +108,7 @@ class GeminiLLMAdapter:
                 ),
             ),
         )
+        provenance.note_model(model)
         raw = (getattr(response, "text", "") or "").strip()
         return self._match_label(raw, labels)
 
@@ -112,12 +127,14 @@ class GeminiLLMAdapter:
 
     def _build_config(self, request: LlmRequest, types: Any) -> Any:
         kwargs: dict[str, Any] = {
-            "temperature": request.temperature,
             "max_output_tokens": request.max_output_tokens,
             "thinking_config": types.ThinkingConfig(
                 thinking_level=self._thinking_level(request.thinking, types)
             ),
         }
+        # Pinned only where the caller pinned it; free is ABSENT, never 1.0.
+        if request.temperature is not None:
+            kwargs["temperature"] = request.temperature
         if request.system_instruction:
             kwargs["system_instruction"] = request.system_instruction
         if request.response_schema is not None:

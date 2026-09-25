@@ -70,7 +70,20 @@ seed data in `adapters/local/_seed.py`. The engines do not branch on market or v
    `tests/contract/test_port_parity.py`; a placeholder must construct and fail fast.
 4. Add profile-specific boundary tests, including unavailable service and malformed response
    cases. Do not copy business rules into the adapter.
-5. Run `make gate`, the UI gate when applicable, and `make tf-validate` when deployment
+5. For a MODEL port (`llm`), **note what answered and sample per call.** After a successful
+   call the `gcp` adapter calls `hex_service_kit.provenance.note_model(<the model id it actually
+   called>)`, and `provenance.note_search()` when, and only when, an online search tool (search
+   grounding, web research) was attached to THAT call; File Search over this repository's own
+   private store is not one. The `local` stub notes `STUB_GENERATOR_MODEL`; the `live` adapter
+   needs nothing, because the kit client notes itself. `api/app.py` turns the notes into
+   `X-Answered-By` / `X-Search-Used`, and the console's pills show them. `LlmRequest.temperature`
+   is `float | None = None`, and an adapter OMITS it when it is `None` (some models reject the
+   parameter, so free means absent, never `1.0`). Pin `0.0` only where the output is extracted,
+   classified, scored or compared; leave drafting, narration, explanation and judges free.
+   There is no second, harder model a flag can swap in: `generator_model` must be the model the
+   adapter calls. Covered by `tests/unit/test_answer_provenance.py` and
+   `tests/unit/test_sampling_per_call.py`.
+6. Run `make gate`, the UI gate when applicable, and `make tf-validate` when deployment
    configuration changed.
 
 ## Adding a new port or sub-service
