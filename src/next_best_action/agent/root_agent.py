@@ -94,8 +94,10 @@ def build_root_agent(settings: Settings | None = None) -> LlmAgent:
     if mcp_toolset is not None:
         tools.append(mcp_toolset)
 
+    # No temperature: the agent converses and narrates tool results, and every number it relays
+    # comes from the deterministic engines behind the tools, so nothing it writes is compared
+    # run to run. Free means the parameter is absent (some models reject it), never 1.0.
     generate_content_config = types.GenerateContentConfig(
-        temperature=0.2,
         thinking_config=types.ThinkingConfig(thinking_budget=-1),
     )
 

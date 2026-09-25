@@ -412,6 +412,10 @@ class RecommendationService:
             f"{request.vertical.value}. Use ONLY the evidence below; cite source ids you "
             f"used. Do not invent numbers.\n\nEVIDENCE:\n{evidence}"
         )
+        # Free sampling (no temperature): this is narration of a ranking already decided. The
+        # score, eligibility and consent are fixed before the call, and the only structured part
+        # of the answer, `used_source_ids`, is not what the response cites (the citations come
+        # from the ranked offer), so no output here is compared or feeds a deterministic check.
         response = self._llm.generate(
             LlmRequest(
                 messages=(LlmMessage(role="user", content=prompt),),
