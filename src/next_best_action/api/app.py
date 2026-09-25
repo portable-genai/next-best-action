@@ -25,6 +25,8 @@ from ..config import Settings, end_user_auth_kind
 from ..domain.errors import (
     AuthorizationError,
     GuardrailBlockedError,
+    ModelOutputError,
+    ModelUnavailableError,
     NoCandidatesError,
     UnknownCustomerError,
 )
@@ -150,8 +152,11 @@ def _cors_origins() -> list[str]:
     _refuse_wildcard(
         [origin.strip() for origin in configured.split(",") if origin.strip()], _CORS_ORIGINS_ENV
     )
+    settings = deps.get_container().settings
+    # ``live`` is a laptop profile like ``local`` and gets the same dev origins; the commons
+    # grants them to exactly one profile string, so a deliberate laptop run is named ``local``.
     return cors_allowlist(
-        deps.get_container().settings.exposure_profile,
+        "local" if settings.laptop else settings.exposure_profile,
         origins_env=_CORS_ORIGINS_ENV,
         dev_origins=tuple(_DEV_ORIGINS),
     )
@@ -321,6 +326,10 @@ def recommend(
         raise HTTPException(status_code=404, detail=f"no candidate offers: {exc}") from exc
     except NotImplementedError as exc:
         raise HTTPException(status_code=501, detail=str(exc)) from exc
+    except ModelUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=f"model unavailable: {exc}") from exc
+    except ModelOutputError as exc:
+        raise HTTPException(status_code=502, detail=f"model output unusable: {exc}") from exc
     payload: dict = to_jsonable(result)
     # What happened to the human-review hand-off: routed, failed, off or not_required.
     payload["review_routing"] = routing.outcome.value

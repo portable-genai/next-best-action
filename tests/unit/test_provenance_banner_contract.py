@@ -45,7 +45,7 @@ def _for_profile(profile: str) -> Settings:
     return dataclasses.replace(Settings.load(CONFIG_PATH), profile=profile)
 
 
-@pytest.mark.parametrize("profile", ["local", "gcp", "onprem"])
+@pytest.mark.parametrize("profile", ["local", "live", "gcp", "onprem"])
 def test_the_runtime_half_states_where_the_process_runs(profile: str) -> None:
     """``onprem`` reads ``local``, because that is its entire point.
 
@@ -57,7 +57,7 @@ def test_the_runtime_half_states_where_the_process_runs(profile: str) -> None:
     assert settings.runtime == ("gcp" if profile == "gcp" else "local")
 
 
-@pytest.mark.parametrize("profile", ["local", "gcp", "onprem"])
+@pytest.mark.parametrize("profile", ["local", "live", "gcp", "onprem"])
 def test_the_model_half_is_always_answered(profile: str) -> None:
     """A blank is not an option: the banner renders nothing rather than render a falsehood."""
     assert _for_profile(profile).generator_model.strip()

@@ -50,6 +50,7 @@ result (maker-checker: the agent proposes, a qualified operator disposes).
 | Profile  | What it is | Google Cloud SDK |
 | -------- | ---------- | ---------------- |
 | `local`  | A WORKING offline stack: deterministic recommendation / propensity store, fictional `marketing-compliance-gate` consent stand-in, SQLite FTS5 corpus, deterministic LLM. The dev/test/CI default. | none |
+| `live`   | Laptop: `local` with one change, the `llm` port answers from the shared local open-weight model through the `hex_service_kit.localmodel` client (`LOCAL_MODEL_URL`, `LOCAL_MODEL`; default Gemma 4 31B on `http://127.0.0.1:8001`). Start the server with `python -m mlx_vlm.server --model mlx-community/gemma-4-31b-it-8bit --port 8001`, then `make run-api PROFILE=live`. Tests, CI and `make demo` stay on `local`. | none |
 | `gcp`    | Managed stack: Vertex AI recommendations + propensity + BigQuery, `marketing-compliance-gate` consent API, Gemini, File Search, Model Armor, Cloud Logging WORM, Cloud Trace, Gen AI eval. Lazy imports. | `[gcp]` extra |
 | `onprem` | Fail-fast `NotImplementedError` placeholders satisfying the same Protocols (exit-portability proof). | none |
 

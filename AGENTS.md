@@ -18,7 +18,7 @@ why an offer was recommended.
 | Catalog id | `next-best-action` |
 | Package | `src/next_best_action/` |
 | Profile variable | `MKT_NBA_PROFILE` |
-| Adapter families | `gcp`, `local`, `onprem`, `platform` |
+| Adapter families | `gcp`, `local`, `live` (local plus the shared local model on `llm`), `onprem`, `platform` |
 | Gate | `make gate` |
 
 `config.py` holds the one resolution of that variable (`_PROFILE_ENV`) and every consumer keys

@@ -15,6 +15,11 @@ const VERTICALS: { value: Vertical; label: string }[] = [
   { value: "online_retail", label: "Online retail" },
 ];
 
+// The profiles that serve seeded dev personas: local, and live (local plus a local model).
+function isLaptopProfile(profile: string | undefined): boolean {
+  return profile === "local" || profile === "live";
+}
+
 export default function Page() {
   const [customerId, setCustomerId] = useState("cust-sg-bank-1");
   const [market, setMarket] = useState<Market>("SG");
@@ -30,11 +35,12 @@ export default function Page() {
     api.healthz().then(setHealth);
   }, []);
 
-  // Demo identity: only the local profile runs with seeded dev personas (no IdP). Load
+  // Demo identity: only the laptop profiles (local, and live, which is local with a local
+  // model answering) run with seeded dev personas (no IdP). Load
   // them and default-select the first, wiring it into the X-Dev-Persona header so the
   // backend resolves a verified Principal from the pick.
   useEffect(() => {
-    if (health?.profile !== "local") return;
+    if (!isLaptopProfile(health?.profile)) return;
     api.listPersonas().then((list) => {
       setPersonas(list);
       if (list.length > 0) {
@@ -120,7 +126,7 @@ export default function Page() {
           </p>
         </div>
 
-        {health?.profile === "local" && personas.length > 0 ? (
+        {isLaptopProfile(health?.profile) && personas.length > 0 ? (
           <div className="mt-3 rounded-xl border border-ink-200 bg-white p-4 shadow-panel">
             <label className="mb-1 block text-xs font-semibold text-ink-600">
               Demo identity
@@ -137,7 +143,7 @@ export default function Page() {
               ))}
             </select>
             <p className="mt-2 text-[11px] text-ink-400">
-              Local profile only: no IdP. The chosen persona is sent as X-Dev-Persona and the
+              Laptop profiles only: no IdP. The chosen persona is sent as X-Dev-Persona and the
               backend resolves a verified identity from it (the client never asserts an actor).
             </p>
           </div>

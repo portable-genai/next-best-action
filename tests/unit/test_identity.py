@@ -64,5 +64,5 @@ def test_personas_are_refused_when_the_local_profile_was_never_chosen() -> None:
 
 
 def test_personas_are_refused_outside_the_local_profile() -> None:
-    with pytest.raises(IdentityError, match="local-profile only"):
+    with pytest.raises(IdentityError, match=r"laptop-profile \(local, live\) only"):
         LocalPersonaIdentityAdapter(Settings(profile="gcp"))
