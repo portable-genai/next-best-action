@@ -379,3 +379,18 @@ variable "cmek_enabled" {
     the right answer: the stores it bound stay bound.
   EOT
 }
+
+variable "model_armor_full_capabilities" {
+  type        = bool
+  default     = true
+  description = <<-EOT
+    Whether the guardrail template asks for the malicious-URI filter, a capability that is
+    not served in every region.
+
+    True by default, because a deployment should get the whole guardrail unless it has a
+    reason not to. asia-southeast1 does not serve it, and Model Armor does not degrade -- it
+    refuses the template with CAPABILITY_NOT_SUPPORTED, so the stack does not deploy at all.
+    A deployment there sets this false, which narrows the guardrail and is a disclosure to
+    make in deployment-posture.md rather than a silent downgrade.
+  EOT
+}
