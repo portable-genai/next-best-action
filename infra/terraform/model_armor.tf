@@ -45,8 +45,15 @@ resource "google_model_armor_template" "nba_guardrail" {
     }
 
     # --- Malicious URL floor. --- #
-    malicious_uri_filter_settings {
-      filter_enforcement = "ENABLED"
+    # Regional capability. asia-southeast1 does not serve it and refuses the template
+    # outright with CAPABILITY_NOT_SUPPORTED, so a deployment there declines it EXPLICITLY
+    # via the variable and discloses the narrowed guardrail. The default keeps it on, so a
+    # region that does serve it gets it without having to ask.
+    dynamic "malicious_uri_filter_settings" {
+      for_each = var.model_armor_full_capabilities ? [1] : []
+      content {
+        filter_enforcement = "ENABLED"
+      }
     }
   }
 
