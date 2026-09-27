@@ -16,7 +16,7 @@
 #   llm (GeminiLLMAdapter) + evaluation (GenAiEvalAdapter) : aiplatform
 #   guardrail (ModelArmorGuardrailAdapter) : modelarmor
 #   audit (CloudLoggingAuditAdapter) : logging (WORM locked bucket)
-#   tracer (CloudTraceTracerAdapter) : cloudtrace
+#   tracer (CloudTracerAdapter) : cloudtrace
 #   agent_registry / tool_catalog : A2A + MCP over aiplatform (no extra API surface)
 #   Cloud Run service : run + artifactregistry (image pull)
 

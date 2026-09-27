@@ -20,7 +20,7 @@ GCP_ADAPTERS = [
     ("next_best_action.adapters.gcp.file_search_kb", "FileSearchKnowledgeBaseAdapter"),
     ("next_best_action.adapters.gcp.model_armor_guardrail", "ModelArmorGuardrailAdapter"),
     ("next_best_action.adapters.gcp.cloud_logging_audit", "CloudLoggingAuditAdapter"),
-    ("next_best_action.adapters.gcp.cloud_trace_tracer", "CloudTraceTracerAdapter"),
+    ("next_best_action.adapters.gcp.tracer", "CloudTracerAdapter"),
     ("next_best_action.adapters.gcp.genai_eval", "GenAiEvalAdapter"),
     ("next_best_action.adapters.gcp.a2a_registry", "A2ARegistryAdapter"),
     ("next_best_action.adapters.gcp.mcp_tool_catalog", "McpToolCatalogAdapter"),
