@@ -398,6 +398,8 @@ class ControlSwitches:
 class ModelArmorSettings:
     template_id: str = "mkt-nba-guardrail"
     host: str = "modelarmor.asia-southeast1.rep.googleapis.com"
+    # Deadline for every sanitize call; a timeout propagates and the request is refused.
+    timeout_seconds: float = 30.0
 
 
 @dataclass(frozen=True)
