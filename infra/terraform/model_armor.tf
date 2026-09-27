@@ -57,10 +57,12 @@ resource "google_model_armor_template" "nba_guardrail" {
     }
   }
 
-  # Audit hygiene: log that operations ran, but never log the sanitized payloads (content
-  # stays out of logs : customer data never lands in a log line).
+  # Audit hygiene: log template changes, but never log sanitize operations. A sanitize-operation
+  # log entry carries the prompt and response text that was screened, and here that is customer
+  # context and recommendation text, so turning it on would copy customer data into Cloud
+  # Logging. OFF is the decision, not the default; tests/model_armor_logging.tftest.hcl pins it.
   template_metadata {
-    log_sanitize_operations = true
+    log_sanitize_operations = false
     log_template_operations = true
     enforcement_type        = "INSPECT_AND_BLOCK"
   }
