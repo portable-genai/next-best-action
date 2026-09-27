@@ -181,8 +181,8 @@ adapters:
     live: next_best_action.adapters.local.audit:LocalAppendOnlyAuditAdapter
     onprem: next_best_action.adapters.onprem.audit:OnPremAuditAdapter
   tracer:
-    gcp: next_best_action.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
-    platform: next_best_action.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
+    gcp: next_best_action.adapters.gcp.tracer:CloudTracerAdapter
+    platform: next_best_action.adapters.gcp.tracer:CloudTracerAdapter
     local: next_best_action.adapters.local.tracer:LocalNoopTracerAdapter
     live: next_best_action.adapters.local.tracer:LocalNoopTracerAdapter
     onprem: next_best_action.adapters.onprem.tracer:OnPremTracerAdapter

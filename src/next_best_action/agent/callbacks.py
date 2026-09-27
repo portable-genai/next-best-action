@@ -58,7 +58,7 @@ def configure_span_privacy() -> None:
     """Ensure message content is never captured into trace spans (PII safety).
 
     Idempotent and non-destructive: only sets the flag if the operator has not already pinned
-    it. Pairs with the Cloud Trace adapter's content-capture-off setting (SPEC §3).
+    it. Pairs with the gcp tracer's content-capture-off contract (SPEC §3).
     """
     os.environ.setdefault(SPAN_CONTENT_ENV, "false")
 
