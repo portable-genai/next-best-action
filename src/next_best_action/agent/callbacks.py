@@ -28,6 +28,7 @@ module imports without ADK installed (SPEC §4).
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
@@ -77,7 +78,12 @@ def _redact_then_screen(
 
 
 def _content_to_text(content: Any) -> str:
-    """Best-effort flatten of an ADK ``types.Content`` (or text) to a string."""
+    """Flatten an ADK ``types.Content`` (or text) to the string the guardrail screens.
+
+    Text parts are not the whole of what crosses the model boundary. A model's function call
+    carries arguments it wrote, and a function response carries tool output (offer names and
+    rationale read from the catalog) into the next prompt, so both are rendered too.
+    """
     if content is None:
         return ""
     if isinstance(content, str):
@@ -90,7 +96,25 @@ def _content_to_text(content: Any) -> str:
         text = getattr(part, "text", None)
         if text:
             chunks.append(text)
+        call = getattr(part, "function_call", None)
+        if call is not None:
+            chunks.append(f"call {getattr(call, 'name', '')}: {_json(getattr(call, 'args', None))}")
+        response = getattr(part, "function_response", None)
+        if response is not None:
+            chunks.append(
+                f"result {getattr(response, 'name', '')}: "
+                f"{_json(getattr(response, 'response', None))}"
+            )
     return "\n".join(chunks)
+
+
+def _json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, default=str, ensure_ascii=False)
+
+
+def _has_function_call(content: Any) -> bool:
+    parts = getattr(content, "parts", None) or []
+    return any(getattr(part, "function_call", None) is not None for part in parts)
 
 
 def _set_state(callback_context: Any, key: str, value: Any) -> None:
@@ -141,7 +165,8 @@ def build_callbacks(container: Container) -> dict[str, Callable[..., Any]]:
         llm_response: LlmResponse,
     ) -> LlmResponse | None:
         """Redact + guardrail the model response; replace text if blocked / sanitised."""
-        response_text = _content_to_text(getattr(llm_response, "content", None))
+        content = getattr(llm_response, "content", None)
+        response_text = _content_to_text(content)
         safe_text, verdict = _redact_then_screen(container, response_text, Direction.OUTPUT)
         _set_state(callback_context, _LAST_RESPONSE_KEY, safe_text)
 
@@ -149,7 +174,9 @@ def build_callbacks(container: Container) -> dict[str, Callable[..., Any]]:
             _set_state(callback_context, _BLOCKED_KEY, True)
             reason = verdict.reason or "Response withheld by output guardrail policy."
             return LlmResponse(content=types.Content(role="model", parts=[types.Part(text=reason)]))
-        if safe_text != response_text:
+        # A sanitised rewrite replaces text only. A response that calls a tool is screened whole
+        # and withheld whole if blocked, but its call is never rewritten into prose.
+        if safe_text != response_text and not _has_function_call(content):
             return LlmResponse(
                 content=types.Content(role="model", parts=[types.Part(text=safe_text)])
             )
