@@ -32,6 +32,10 @@ variables {
   consent_store_audience = "https://mkt6-consent.fictional.example"
   human_review_url       = "https://review.fictional.example"
   access_policy_id       = "987654321098"
+  # Slice 7 turned these reversible controls off by default on 2026-10-01. The runs in this
+  # file were written under the old default, so the file states it; a run that sets one
+  # explicitly still overrides it. posture_defaults.tftest.hcl pins the new default.
+  enable_vpc_sc = true
 }
 
 # The Cloud Run preconditions resolve the project numbers and the Shared VPC subnet from data
