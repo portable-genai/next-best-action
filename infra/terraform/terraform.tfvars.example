@@ -54,7 +54,7 @@ consent_store_audience = "https://mkt6-consent.internal.example"
 # refuses the whole guardrail template with CAPABILITY_NOT_SUPPORTED while it is requested, so a
 # deployment here uncomments this line and records the narrowed guardrail in deployment-posture.md.
 # Leave it commented in a region that serves the filter (the default keeps it on).
-# model_armor_full_capabilities = false
+model_armor_full_capabilities = false # asia-southeast1 refuses the malicious-URI filter; state true in a region that serves it
 
 # Wire a real channel id in prod so posture alerts page someone.
 alert_notification_channels = []
