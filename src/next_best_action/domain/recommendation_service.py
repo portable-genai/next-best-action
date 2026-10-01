@@ -20,9 +20,11 @@ Pipeline (each step wrapped in ``tracer.span``; audited at the end):
       consent)
       -> recommendations.propensity(customer, candidates)        (Vertex propensity)
       -> ranking.rank(eligible & consented offers)               (deterministic score)
-      -> llm.generate("why recommended") per top recommendation  (explanation only)
+      -> per top recommendation (explanation only):
+           redact(prompt) -> guardrail.screen(INPUT)  [the prompt carries catalog text]
+           -> llm.generate("why recommended") on the redacted prompt
       -> assemble RecommendationSet (requires_human_review=True)
-      -> redact(output) -> guardrail.screen(OUTPUT)  [blocked -> audit BLOCKED + raise]
+      -> redact(output) -> guardrail.screen(OUTPUT)  [summary AND every explanation returned]
       -> audit.record (already-redacted; customer key pseudonymized)
 
 Two boundary guarantees layered on top (security-critical, fail-closed):
@@ -172,7 +174,9 @@ class RecommendationService:
                 propensity=propensity,
             )
 
-            recs = self._build_recommendations(ranking, elig_by_id, consent_by_id, request, actor)
+            recs = self._build_recommendations(
+                ranking, elig_by_id, consent_by_id, request, principal
+            )
             suppressed = tuple(e for e in elig if not e.eligible)
             consent_suppressed = tuple(
                 c for c in consent_decisions if not c.allowed and elig_by_id[c.offer_id].eligible
@@ -203,7 +207,10 @@ class RecommendationService:
                 citations=citations,
                 requires_human_review=True,
             )
-            self._guard(summary, Direction.OUTPUT, request, principal)
+            # The OUTPUT screen sees everything the caller is handed as prose: the deterministic
+            # summary and each model-written explanation, which the API, the MCP handler and the
+            # CLI all return verbatim.
+            self._guard(self._output_text(result), Direction.OUTPUT, request, principal)
             self._record(result, request, principal, customer)
 
             # Rule R8: route the escalation to human-review-console (the maker-checker console)
@@ -227,12 +234,12 @@ class RecommendationService:
         elig_by_id: dict[str, EligibilityResult],
         consent_by_id: dict[str, ConsentDecision],
         request: RecommendationRequest,
-        actor: str,
+        principal: Principal,
     ) -> tuple[Recommendation, ...]:
         top = ranking.offers[: max(request.max_recommendations, 1)]
         out: list[Recommendation] = []
         for ranked in top:
-            explanation = self._explain(request, ranked)
+            explanation = self._explain(request, ranked, principal)
             out.append(
                 Recommendation(
                     offer_id=ranked.offer_id,
@@ -404,14 +411,20 @@ class RecommendationService:
     # ------------------------------------------------------------------ #
     # LLM explanation (explains "why recommended"; never decides the numbers)
     # ------------------------------------------------------------------ #
-    def _explain(self, request: RecommendationRequest, ranked: RankedOffer) -> str:
+    def _explain(
+        self, request: RecommendationRequest, ranked: RankedOffer, principal: Principal
+    ) -> str:
         evidence = self._render_evidence(ranked)
-        prompt = (
+        raw_prompt = (
             f"Explain in one or two sentences why offer '{ranked.name}' is the next-best "
             f"action for this customer in market {request.market.value}, vertical "
             f"{request.vertical.value}. Use ONLY the evidence below; cite source ids you "
             f"used. Do not invent numbers.\n\nEVIDENCE:\n{evidence}"
         )
+        # The evidence carries offer names and rationale read from the catalog table, so this
+        # prompt, not the request context screened at entry, is what the model is asked. Screen
+        # it, and send the model the redacted text that was screened.
+        prompt = self._guard(raw_prompt, Direction.INPUT, request, principal)
         # Free sampling (no temperature): this is narration of a ranking already decided. The
         # score, eligibility and consent are fixed before the call, and the only structured part
         # of the answer, `used_source_ids`, is not what the response cites (the citations come
@@ -447,6 +460,13 @@ class RecommendationService:
         )
 
     @staticmethod
+    def _output_text(result: RecommendationSet) -> str:
+        """Every prose field the caller receives, rendered for the OUTPUT screen."""
+        lines = [result.summary]
+        lines += [f"{r.name}: {r.explanation}" for r in result.recommendations]
+        return "\n".join(lines)
+
+    @staticmethod
     def _summarise(
         request: RecommendationRequest,
         recs: tuple[Recommendation, ...],
@@ -470,14 +490,18 @@ class RecommendationService:
         direction: Direction,
         request: RecommendationRequest,
         principal: Principal,
-    ) -> None:
+    ) -> str:
         """Redact PII, then guardrail-screen; on block, audit the redacted text and raise.
+
+        Returns the redacted text that was screened, so a caller that sends it on (the
+        explanation prompt) sends exactly what the guardrail saw.
 
         The text screened by the guardrail is PII-redacted but keeps the raw request content
         (so an injection attempt is still detectable); the text written to the audit sink is
         additionally pseudonymized, so the internal customer key never lands in the WORM store.
         """
-        verdict: GuardrailVerdict = self._guardrail.screen(self._redact(raw_text), direction)
+        redacted = self._redact(raw_text)
+        verdict: GuardrailVerdict = self._guardrail.screen(redacted, direction)
         if not verdict.allowed:
             sanitized = self._for_audit(raw_text, request)
             self._write_audit(
@@ -489,6 +513,7 @@ class RecommendationService:
                 extra_metadata={"reason": verdict.reason, "direction": direction.value},
             )
             raise GuardrailBlockedError(verdict.reason or "guardrail blocked the request")
+        return redacted
 
     def _span(self, name: str, **attrs: str) -> Any:
         try:
